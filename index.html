@@ -115,6 +115,20 @@
 }
 .layout { align-items: flex-start; }
 #content-area { width: 100%; }
+@media print {
+  body { background: #fff !important; }
+  .hero, .panel, .fixed-header, .toc-container { display: none !important; }
+
+  /* 오른쪽 본문만 인쇄 */
+  #content-area { display: block; }
+  .dept-container { 
+    page-break-after: always; 
+    break-after: page;
+  }
+
+  /* Plotly가 프린트 때 잘리면 높이 여유 */
+  .plot-container { height: 320px !important; }
+}
 
   </style>
 </head>
@@ -128,9 +142,12 @@
     <h2>엑셀 업로드</h2>
     <div class="field">
       <input type="file" id="file-input" accept=".xlsx,.xls" />
-      <div class="actions">
-        <button class="primary" id="generate-btn">보고서 생성</button>
-      </div>
+     <div class="actions">
+  <button class="primary" id="generate-btn">보고서 생성</button>
+  <button id="print-btn">🖨️ 인쇄</button>
+  <button id="pdf-btn">📄 PDF(주제별)</button>
+</div>
+
     </div>
     <div id="status"></div>
   </section>
@@ -161,6 +178,14 @@
     let lastRecords = null;
 
     generateBtn.addEventListener("click", handleGenerate);
+document.getElementById("print-btn").addEventListener("click", () => {
+  const reportArea = document.getElementById("report");
+  if (reportArea.hidden) {
+    alert("먼저 보고서를 생성해주세요!");
+    return;
+  }
+  window.print();
+});
 
     function setStatus(msg, isError = false) {
       statusEl.textContent = msg;
