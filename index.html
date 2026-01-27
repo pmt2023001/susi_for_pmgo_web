@@ -257,14 +257,15 @@
         </div>
 `; // ✅ 이 백틱+세미콜론이 반드시 필요
 
-      const layout = `
-        <div class="layout">
-          <aside class="toc-container">
-            <div class="toc-header">목차</div>
-            <div id="toc-content"></div>
-          </aside>
-          <main class="main-content" id="content-area"></main>
-        </div>`;
+const layout = `
+  <div class="layout">
+    <aside class="toc-container">
+      <div class="toc-header">목차</div>
+      <div id="toc-content"></div>
+    </aside>
+    <main class="main-content" id="content-area"></main>
+  </div>
+`;
 
       reportEl.hidden = false;
       reportEl.innerHTML = header + layout;
