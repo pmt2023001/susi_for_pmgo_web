@@ -924,41 +924,6 @@
     }
 
   </script>
-</body>
-  <div class="no-print floating-buttons">
-    <button onclick="window.print()" class="btn-print">📄 PDF 저장 / 인쇄</button>
-    <button onclick="shareAsImage()" class="btn-share">🖼️ 결과 이미지 저장</button>
-</div>
-
-<style>
-.floating-buttons {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 10000;
-}
-.floating-buttons button {
-    padding: 12px 20px;
-    border-radius: 50px;
-    border: none;
-    background: #4A90E2;
-    color: white;
-    font-weight: bold;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.floating-buttons button:hover {
-    background: #357ABD;
-    transform: translateY(-3px);
-}
-@media print {
-    .no-print { display: none !important; }
-}
-</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
