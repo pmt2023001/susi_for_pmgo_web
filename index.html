@@ -88,12 +88,14 @@
       .toc-container { position: static; max-height: none; width: 100%; }
     }
 /* ===== 본문(가운데) 카드 스타일 보정 ===== */
+/* ===== 오른쪽 본문은 '컨테이너'로만 사용 (카드 제거) ===== */
 .main-content {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: var(--shadow);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;          /* 카드 패딩 제거 */
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 /* 목차도 동일 톤으로 */
@@ -103,6 +105,17 @@
   border-radius: 14px;
   box-shadow: var(--shadow);
 }
+.layout { align-items: flex-start; }
+.main-content { align-self: stretch; }
+#content-area { width: 100%; }
+
+    .filter-info{
+  background: linear-gradient(180deg, #ffffff, #fbf8f2);
+  box-shadow: var(--shadow);
+}
+.layout { align-items: flex-start; }
+#content-area { width: 100%; }
+
   </style>
 </head>
 <body>
