@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>강원진학센터 단위학교용 수시 입시 결과 통계프로그램</title>
+  <title>풍무고등학교 수시 입시 결과 통계프로그램</title>
   <style>
     :root {
       --bg: #f6f4ef;
@@ -253,7 +254,42 @@
             </div>
           </div>
         </div>`;
+<div class="no-print floating-buttons">
+    <button onclick="window.print()" class="btn-print">📄 PDF 저장</button>
+    <button onclick="shareAsImage()" class="btn-share">🖼️ 이미지 저장</button>
+</div>
 
+<style>
+.floating-buttons {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999; /* 다른 요소보다 위에 보이게 */
+}
+
+.floating-buttons button {
+    padding: 12px 20px;
+    border-radius: 50px;
+    border: none;
+    background: #4A90E2;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.floating-buttons button:hover {
+    transform: scale(1.1);
+}
+
+@media print {
+    .no-print { display: none !important; }
+}
+</style>
       const layout = `
         <div class="layout">
           <aside class="toc-container">
