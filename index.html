@@ -342,6 +342,29 @@
 #content-area > .dept-container:first-child{
   margin-top: 6px;
 }
+/* ===== 출력 모드 분기 ===== */
+/* 기본(전체 출력): 제한 없음 */
+
+@media print {
+  /* 전체 출력은 그대로 */
+
+  /* 현황 1부: overall-summary만 출력 */
+  body.print-overall #report .dept-container:not(#overall-summary) {
+    display: none !important;
+  }
+
+  /* 서울+수도권 출력: capital-summary만 출력 */
+  body.print-capital #report .dept-container:not(#capital-summary) {
+    display: none !important;
+  }
+
+  /* 특정 섹션은 페이지 브레이크 최소화 */
+  body.print-overall #overall-summary,
+  body.print-capital #capital-summary {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
+}
 
     
   </style>
@@ -357,12 +380,14 @@
     <h2>엑셀 업로드</h2>
     <div class="field">
       <input type="file" id="file-input" accept=".xlsx,.xls" />
-      <div class="actions">
-        <button class="primary" id="generate-btn">보고서 생성</button>
-        <button id="print-btn">🖨️ 인쇄(PDF 저장)</button>
-        <!-- (선택) 이미지 저장 버튼을 쓰려면 아래 버튼도 함께 쓰세요 -->
-        <!-- <button id="img-btn">📸 이미지로 저장</button> -->
-      </div>
+    <div class="actions">
+  <button class="primary" id="generate-btn">보고서 생성</button>
+
+  <button id="print-overall-btn">🖨️ 현황 출력(1부)</button>
+  <button id="print-capital-btn">🖨️ 서울+수도권 출력</button>
+  <button id="print-full-btn">🖨️ 전체 출력</button>
+</div>
+
     </div>
     <div id="status"></div>
   </section>
