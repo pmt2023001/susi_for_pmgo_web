@@ -1,176 +1,206 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>풍무고등학교 수시 입시 결과 통계프로그램</title>
+
+  <!-- 외부 라이브러리 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
   <style>
     :root {
       --bg: #f6f4ef;
       --card: #ffffff;
       --border: #d9d2c3;
-      --primary: #6b8f71;      /* sage */
+      --primary: #6b8f71;
       --primary-dark: #58765e;
-      --accent: #d07a5c;       /* warm terracotta */
+      --accent: #d07a5c;
       --text: #2f3c32;
       --muted: #6a7065;
-      --shadow: 0 10px 28px rgba(47, 60, 50, 0.12);
+      --shadow: 0 10px 28px rgba(47,60,50,0.12);
+      --stickyTop: 190px;
     }
+
     * { box-sizing: border-box; }
-    body { margin: 0; background: radial-gradient(circle at 20% 20%, rgba(208, 122, 92, 0.08), transparent 30%), radial-gradient(circle at 80% 0%, rgba(107, 143, 113, 0.12), transparent 28%), var(--bg); color: var(--text); font-family: "Noto Sans KR", "Pretendard", system-ui, -apple-system, sans-serif; }
-    .hero { padding: 28px 20px 14px; text-align: center; }
-    .hero h1 { margin: 0 0 8px; font-size: 24px; letter-spacing: -0.2px; }
-    .hero p { margin: 0; color: var(--muted); }
-    .panel { max-width: 1160px; margin: 0 auto 18px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); }
-    .panel h2 { margin: 0 0 10px; font-size: 18px; letter-spacing: -0.1px; }
-    .field { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-    button { cursor: pointer; border: 1px solid var(--border); background: #eef0eb; color: var(--text); padding: 10px 14px; border-radius: 10px; font-weight: 600; transition: all 0.15s ease; }
-    button:hover { background: #e4e7e0; }
-    button.primary { background: var(--primary); color: #fff; border-color: var(--primary-dark); box-shadow: 0 6px 12px rgba(107, 143, 113, 0.25); }
-    button.primary:hover { background: var(--primary-dark); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-    #status { margin-top: 6px; color: var(--muted); font-size: 14px; }
-    .layout { max-width: 1200px; margin: 0 auto 32px; display: flex; gap: 16px; padding: 0 12px; }
-    .fixed-header { position: sticky; top: 0; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(8px); padding: 12px 0; box-shadow: 0 6px 18px rgba(0,0,0,0.08); z-index: 50; border-bottom: 1px solid #e7e1d5; }
-    .header-content { max-width: 1200px; margin: 0 auto; padding: 0 12px; display: flex; flex-direction: column; gap: 8px; }
-    .header-top { display: flex; align-items: center; justify-content: space-between; }
-    .site-title { font-weight: 700; color: var(--primary-dark); font-size: 14px; letter-spacing: 0.2px; }
-    .university-title { margin: 0; text-align: center; font-size: 20px; font-weight: 800; color: var(--text); }
-    .controls-legend-wrapper { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-    .grade-toggle-container, .legend-container { background: #f1eee7; border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 4px 12px rgba(47,60,50,0.08); }
-    .grade-toggle-btn { padding: 9px 14px; margin-right: 6px; border: 1px solid #cfc6b6; border-radius: 9px; background: #fff; font-weight: 700; cursor: pointer; color: var(--text); }
-    .grade-toggle-btn.active { background: var(--accent); color: #fff; border-color: #b6654c; box-shadow: 0 0 8px rgba(208, 122, 92, 0.45); }
-    .legend-items-wrapper { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); }
-    .legend-marker { font-size: 18px; }
-    .legend-pass { color: #5f8669; }
-    .legend-wait { color: #7cab7c; }
-    .legend-fail { color: #d07a5c; }
-    .axis-label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
-    .toc-container { flex: 0 0 220px; position: sticky; top: 140px; align-self: flex-start; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; max-height: calc(100vh - 180px); overflow-y: auto; box-shadow: var(--shadow); }
-    :root { --stickyTop: 190px; }  /* 기본 여유값 */
 
-.toc-container{
-  top: var(--stickyTop) !important;
-}
-
-    .toc-header { font-weight: 800; margin-bottom: 10px; font-size: 16px; color: var(--text); letter-spacing: -0.1px; }
-    .toc-university { font-weight: 700; cursor: pointer; padding: 6px 6px; border-radius: 8px; color: var(--primary-dark); transition: background 0.15s; }
-    .toc-university:hover { background: rgba(107, 143, 113, 0.12); }
-    .toc-subitems { margin-left: 10px; }
-    .toc-subtype-item, .toc-dept-item { font-size: 13px; padding: 4px 6px; border-radius: 6px; cursor: pointer; color: #394639; transition: background 0.15s; }
-    .toc-subtype-item:hover, .toc-dept-item:hover { background: rgba(208, 122, 92, 0.12); }
-    .main-content { flex: 1 1 auto; min-width: 0; }
-    .dept-container { margin-bottom: 26px; border: 1px solid var(--border); border-radius: 14px; padding: 20px; background: linear-gradient(180deg, #ffffff, #fbf8f2); box-shadow: var(--shadow); }
-    .dept-header { margin: 0 0 16px; font-weight: 800; font-size: 20px; color: var(--text); border-bottom: 2px solid var(--primary); padding-bottom: 10px; letter-spacing: -0.2px; }
-    .subtype-container { margin-bottom: 18px; border: 1px solid #e4ddcf; border-radius: 12px; padding: 14px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
-    .subtype-header { margin: 0 0 10px; font-weight: 700; font-size: 17px; color: #394639; }
-    .visualization-container { display: flex; flex-direction: column; gap: 10px; }
-    .plot-container { width: 100%; height: 220px; }
-    .stats-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
-    .stats-item { padding: 7px 11px; border-radius: 8px; background: #eef0eb; border: 1px solid #d6cebf; font-size: 13px; }
-    .stats-total { font-weight: 800; background: #e4e0d7; }
-    .stats-pass { border-left: 4px solid var(--primary); }
-    .stats-wait { border-left: 4px solid #7cab7c; }
-    .stats-fail { border-left: 4px solid #d26c5b; }
-    .additional-stats-container { margin-top: 6px; font-size: 13px; }
-    .stats-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-    .stats-table th, .stats-table td { border: 1px solid #e4ddcf; padding: 7px; text-align: center; }
-    .stats-table th { background: #f1ede5; font-weight: 700; }
-    .pass-row td { background: rgba(107, 143, 113, 0.08); }
-    .fail-row td { background: rgba(210, 108, 91, 0.08); }
-    .waitlist-row td { background: rgba(124, 171, 124, 0.08); }
-    .filter-info { margin: 10px 0; background: rgba(107, 143, 113, 0.12); border: 1px solid var(--border); padding: 10px; border-radius: 10px; }
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
-    .card { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: #fff; box-shadow: 0 6px 14px rgba(47,60,50,0.08); }
-    .card h3 { margin: 0 0 8px; font-size: 15px; letter-spacing: -0.05px; }
-    .full-width { grid-column: 1 / -1; }
-    .empty { padding: 16px; text-align: center; color: var(--muted); }
-    @media (max-width: 960px) {
-      .layout { flex-direction: column; }
-      .toc-container { position: static; max-height: none; width: 100%; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
-/* ===== 본문(가운데) 카드 스타일 보정 ===== */
-/* ===== 오른쪽 본문은 '컨테이너'로만 사용 (카드 제거) ===== */
-.main-content {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0;          /* 카드 패딩 제거 */
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
 
-/* 목차도 동일 톤으로 */
-.toc-container {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-}
-.layout { align-items: flex-start; }
-.main-content { align-self: stretch; }
-#content-area { width: 100%; }
+    /* ✅ 추가: 표/빈데이터 기본 스타일 */
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .stats-table th, .stats-table td {
+      border: 1px solid #e4ddcf;
+      padding: 7px;
+      text-align: center;
+    }
+    .stats-table thead th {
+      background: #f1ede5;
+      font-weight: 800;
+    }
+    .empty {
+      padding: 18px;
+      border: 1px dashed #d9d2c3;
+      border-radius: 12px;
+      color: var(--muted);
+      text-align: center;
+      background: #fff;
+    }
 
-    .filter-info{
-  background: linear-gradient(180deg, #ffffff, #fbf8f2);
-  box-shadow: var(--shadow);
-}
-.layout { align-items: flex-start; }
-#content-area { width: 100%; }
-@media print {
-  body { background: #fff !important; }
-  .hero, .panel, .fixed-header, .toc-container { display: none !important; }
+    /* ===== 상단 ===== */
+    .hero {
+      padding: 28px 20px 14px;
+      text-align: center;
+    }
 
-  /* 오른쪽 본문만 인쇄 */
-  #content-area { display: block; }
-  .dept-container { 
-    page-break-after: always; 
-    break-after: page;
-  }
+    .panel {
+      max-width: 1160px;
+      margin: 0 auto 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
 
-  /* Plotly가 프린트 때 잘리면 높이 여유 */
-  .plot-container { height: 320px !important; }
-}
-@media print {
-  @page { size: A4 portrait; margin: 12mm; }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
-  /* 인쇄에서 숨길 것 */
-  .hero, .panel, .fixed-header, .toc-container { display: none !important; }
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #eef0eb;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
 
-  /* 인쇄는 오른쪽 본문만 */
-  .layout { display: block !important; padding: 0 !important; }
-  .main-content { padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+    }
 
-  /* 잘림 방지 */
-  .dept-container, .subtype-container, .card {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
+    /* ===== 고정 헤더 ===== */
+    .fixed-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255,255,255,0.95);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
 
-  /* ✅ 대학별로 새 장 시작 */
-  .dept-container {
-    break-before: page;
-    page-break-before: always;
-  }
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
-  /* ✅ 단, 첫 블록(전체 요약)은 첫 페이지에서 시작해야 하니 예외 */
-  #overall-summary { break-before: auto; page-break-before: auto; }
-  #univ-top-global { break-before: page; page-break-before: always; } /* TOP20도 새 장(원하면 auto로 바꿔도 됨) */
+    .grade-toggle-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
 
-  /* Plotly 인쇄 안정화 */
-  .plot-container { height: 320px !important; }
-}
-.print-grade-line{
-  font-weight: 800;
-  margin-bottom: 6px;
-}
+    /* ===== 레이아웃 ===== */
+    .layout {
+      max-width: 1200px;
+      margin: 0 auto 32px;
+      display: flex;
+      gap: 16px;
+      padding: 0 12px;
+      align-items: flex-start;
+    }
 
+    .toc-container {
+      flex: 0 0 220px;
+      position: sticky;
+      top: var(--stickyTop);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 0;
+    }
+
+    .dept-container {
+      margin-bottom: 28px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .dept-header {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 8px;
+    }
+
+    .print-grade-line {
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    /* ===== 인쇄 ===== */
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+
+      body { background: #fff !important; }
+
+      .hero, .panel, .fixed-header, .toc-container {
+        display: none !important;
+      }
+
+      .layout {
+        display: block !important;
+        padding: 0 !important;
+      }
+
+      .dept-container {
+        page-break-before: always;
+        break-before: page;
+        box-shadow: none;
+        border: none;
+      }
+
+      /* ✅ 첫 블록은 강제 페이지 브레이크 제거 */
+      #overall-summary {
+        page-break-before: auto !important;
+        break-before: auto !important;
+      }
+
+      .plot-container {
+        height: 320px !important;
+      }
+    }
   </style>
 </head>
+
 <body>
   <header class="hero">
     <h1>수시 입시 결과 통계 프로그램 [풍무고등학교]</h1>
@@ -181,34 +211,32 @@
     <h2>엑셀 업로드</h2>
     <div class="field">
       <input type="file" id="file-input" accept=".xlsx,.xls" />
-     <div class="actions">
-  <button class="primary" id="generate-btn">보고서 생성</button>
-  <button id="print-btn">🖨️ 인쇄</button>
-  <button id="pdf-btn">📄 PDF(주제별)</button>
-</div>
-
+      <div class="actions">
+        <button class="primary" id="generate-btn">보고서 생성</button>
+        <button id="print-btn">🖨️ 인쇄(PDF 저장)</button>
+        <!-- (선택) 이미지 저장 버튼을 쓰려면 아래 버튼도 함께 쓰세요 -->
+        <!-- <button id="img-btn">📸 이미지로 저장</button> -->
+      </div>
     </div>
     <div id="status"></div>
   </section>
 
   <section id="report" hidden></section>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
   <script>
     const RESULT_ORDER = ["합격", "충원합격", "불합격"];
     const COLOR_MAP = {
-      "합격": { border: "#5f8669", fill: "rgba(95, 134, 105, 0.30)" },      // sage
-      "충원합격": { border: "#7cab7c", fill: "rgba(124, 171, 124, 0.28)" }, // lighter sage
-      "불합격": { border: "#d07a5c", fill: "rgba(208, 122, 92, 0.32)" },    // warm terracotta
+      "합격":   { border: "#5f8669", fill: "rgba(95, 134, 105, 0.30)" },
+      "충원합격": { border: "#7cab7c", fill: "rgba(124, 171, 124, 0.28)" },
+      "불합격": { border: "#d07a5c", fill: "rgba(208, 122, 92, 0.32)" },
     };
     const SYMBOL_MAP = { "합격": "circle", "충원합격": "triangle-up", "불합격": "x" };
     const Y_POS = { "합격": 0.01, "충원합격": 0.0, "불합격": -0.03 };
     const BINS = { start: 1, end: 9, size: 0.5 };
 
     const fileInput = document.getElementById("file-input");
-    const statusEl = document.getElementById("status");
-    const reportEl = document.getElementById("report");
+    const statusEl  = document.getElementById("status");
+    const reportEl  = document.getElementById("report");
     const generateBtn = document.getElementById("generate-btn");
 
     let currentGradeType = "all_subj";
@@ -217,14 +245,14 @@
     let lastRecords = null;
 
     generateBtn.addEventListener("click", handleGenerate);
-document.getElementById("print-btn").addEventListener("click", () => {
-  const reportArea = document.getElementById("report");
-  if (reportArea.hidden) {
-    alert("먼저 보고서를 생성해주세요!");
-    return;
-  }
-  window.print();
-});
+
+    document.getElementById("print-btn").addEventListener("click", () => {
+      if (reportEl.hidden) {
+        alert("먼저 보고서를 생성해주세요!");
+        return;
+      }
+      window.print();
+    });
 
     function setStatus(msg, isError = false) {
       statusEl.textContent = msg;
@@ -238,6 +266,7 @@ document.getElementById("print-btn").addEventListener("click", () => {
         return;
       }
       setStatus("엑셀을 읽는 중...");
+
       try {
         const records = await parseExcel(file);
         if (!records.length) {
@@ -256,18 +285,23 @@ document.getElementById("print-btn").addEventListener("click", () => {
     function parseExcel(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
+
         reader.onload = (e) => {
           try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: "array" });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 2 }); // skip first 2 rows
 
+            // 첫 2행 스킵(사용자 원본 로직 유지)
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 2 });
+
+            // 형식 판별(사용자 원본 로직 유지)
             const isAltFormat = (() => {
               const cell = sheet["V1"];
               const val = cell ? String(cell.v || "").trim() : "";
               return val.includes("최종단계");
             })();
+
             // 기본: result=R(17), all_subj=AG(32), conv=AH(33)
             // 대안: result=V(21), all_subj=R(17), conv=T(19)
             const COL = {
@@ -277,8 +311,8 @@ document.getElementById("print-btn").addEventListener("click", () => {
               subtype: 10,// K
               dept: 12,   // M
               result: isAltFormat ? 21 : 17,
-              all: isAltFormat ? 17 : 32,
-              conv: isAltFormat ? 19 : 33,
+              all:    isAltFormat ? 17 : 32,
+              conv:   isAltFormat ? 19 : 33,
             };
 
             const records = [];
@@ -297,29 +331,43 @@ document.getElementById("print-btn").addEventListener("click", () => {
                 all_subj_grade: parseGrade(row[COL.all]),
                 conv_grade: parseGrade(row[COL.conv]),
               };
+
+              // 필수값 체크
               if (!rec.result || !rec.univ || !rec.dept || !rec.subtype || !rec.apptype) return;
               if (rec.all_subj_grade === null && rec.conv_grade === null) return;
+
               records.push(rec);
             });
+
             resolve(records);
           } catch (err) {
             reject(err);
           }
         };
+
         reader.onerror = (err) => reject(err);
         reader.readAsArrayBuffer(file);
       });
     }
 
-    function safe(v) { return v === undefined || v === null ? "" : String(v).trim(); }
-    function parseGrade(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
+    function safe(v) {
+      return v === undefined || v === null ? "" : String(v).trim();
+    }
+
+    function parseGrade(v) {
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function unique(arr) {
+      return Array.from(new Set(arr)).filter(Boolean).sort();
+    }
 
     function renderFullReport(records) {
       plotsData = {};
       plotInitialized = {};
       currentGradeType = "all_subj";
 
-      const unique = (arr) => Array.from(new Set(arr)).filter(Boolean).sort();
       const univs = unique(records.map((r) => r.univ));
       const depts = unique(records.map((r) => r.dept));
       const apptypes = unique(records.map((r) => r.apptype));
@@ -331,34 +379,44 @@ document.getElementById("print-btn").addEventListener("click", () => {
             <div class="header-top">
               <div class="site-title">modified by KO</div>
             </div>
-          <h2 class="university-title">수시 입시 결과 통계 프로그램 [풍무고등학교]</h2>
-            <div class="controls-legend-wrapper">
-              <div class="grade-toggle-container">
+            <h2 class="university-title">수시 입시 결과 통계 프로그램 [풍무고등학교]</h2>
+
+            <div class="controls-legend-wrapper" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+              <div class="grade-toggle-container" style="background:#f1eee7;border:1px solid var(--border);border-radius:12px;padding:10px;">
                 <button id="btn-conv" class="grade-toggle-btn">환산등급</button>
                 <button id="btn-all" class="grade-toggle-btn active">전교과100 등급</button>
               </div>
-              <div class="legend-container">
-                <div class="legend-items-wrapper">
-                  <div class="legend-item"><span class="legend-marker legend-pass">&#9679;</span><span>합격 (Y축 상단)</span></div>
-                  <div class="legend-item"><span class="legend-marker legend-wait">&#9650;</span><span>충원합격 (Y축 중앙)</span></div>
-                  <div class="legend-item"><span class="legend-marker legend-fail">&#10006;</span><span>불합격 (Y축 하단)</span></div>
+
+              <div class="legend-container" style="background:#f1eee7;border:1px solid var(--border);border-radius:12px;padding:10px;">
+                <div class="legend-items-wrapper" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                  <div class="legend-item" style="display:inline-flex;align-items:center;gap:6px;">
+                    <span class="legend-marker" style="font-size:18px;color:#5f8669;">&#9679;</span><span>합격 (Y축 상단)</span>
+                  </div>
+                  <div class="legend-item" style="display:inline-flex;align-items:center;gap:6px;">
+                    <span class="legend-marker" style="font-size:18px;color:#7cab7c;">&#9650;</span><span>충원합격 (Y축 중앙)</span>
+                  </div>
+                  <div class="legend-item" style="display:inline-flex;align-items:center;gap:6px;">
+                    <span class="legend-marker" style="font-size:18px;color:#d07a5c;">&#10006;</span><span>불합격 (Y축 하단)</span>
+                  </div>
                 </div>
-                <div class="axis-label"><span>↔</span><span id="grade-label">전교과100 등급</span> (1~9)</div>
+                <div class="axis-label" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:6px;">
+                  <span>↔</span><span id="grade-label">전교과100 등급</span> (1~9)
+                </div>
               </div>
             </div>
           </div>
         </div>
-`; // ✅ 이 백틱+세미콜론이 반드시 필요
+      `;
 
-const layout = `
-  <div class="layout">
-    <aside class="toc-container">
-      <div class="toc-header">목차</div>
-      <div id="toc-content"></div>
-    </aside>
-    <main class="main-content" id="content-area"></main>
-  </div>
-`;
+      const layout = `
+        <div class="layout">
+          <aside class="toc-container">
+            <div class="toc-header" style="font-weight:800;margin-bottom:10px;font-size:16px;">목차</div>
+            <div id="toc-content"></div>
+          </aside>
+          <main class="main-content" id="content-area"></main>
+        </div>
+      `;
 
       reportEl.hidden = false;
       reportEl.innerHTML = header + layout;
@@ -366,51 +424,65 @@ const layout = `
       const contentEl = document.getElementById("content-area");
       let plotCounter = 1;
 
-     const filterSummary = `
-  <div class="filter-info">
-    <div id="print-grade-line" class="print-grade-line">
-      출력 기준: <span id="print-grade-text">전교과100 등급</span>
-    </div>
-    총 ${records.length}건 · 대학 ${univs.length} · 모집단위 ${depts.length} · 전형유형 ${apptypes.length} · 전형 ${subtypes.length}
-  </div>`;
-contentEl.insertAdjacentHTML("beforeend", filterSummary);
+      // 출력 기준 표
+      // 출력 기준 표
+      const filterSummary = `
+        <div class="dept-container" style="margin-bottom:16px;">
+          <div class="print-grade-line">
+            출력 기준: <span id="print-grade-text">전교과100 등급</span>
+          </div>
+          총 ${records.length}건 · 대학 ${univs.length} · 모집단위 ${depts.length} · 전형유형 ${apptypes.length} · 전형 ${subtypes.length}
+        </div>
+      `;
+      contentEl.insertAdjacentHTML("beforeend", filterSummary);
 
-
-      // 전체 요약을 최상단에 배치
+      // 전체 요약
       const overallBlock = buildPlotBlock(records, plotCounter, "전체 데이터", true, true, true, true);
       plotsData[plotCounter] = overallBlock.data;
-      contentEl.insertAdjacentHTML("beforeend", `<div class="dept-container" id="overall-summary">
+
+      contentEl.insertAdjacentHTML("beforeend", `
+        <div class="dept-container" id="overall-summary">
           <div class="dept-header" style="border-bottom:2px solid #e74c3c;">전체 데이터 요약</div>
           ${overallBlock.html}
-        </div>`);
+        </div>
+      `);
       plotCounter++;
 
-      // 지원 상위 대학 TOP20
-      contentEl.insertAdjacentHTML("beforeend", `<div class="dept-container" id="univ-top-global">
-          <div class="dept-header" style="border-bottom:2px solid var(--primary);">지원 상위 대학 TOP 20 합/충원/불합격</div>
-          <div class="card">
-            <div id="univ-top-chart" class="plot-container"></div>
+      // TOP20
+      contentEl.insertAdjacentHTML("beforeend", `
+        <div class="dept-container" id="univ-top-global">
+          <div class="dept-header">지원 상위 대학 TOP 20 합/충원/불합격</div>
+          <div style="border:1px solid var(--border);border-radius:12px;padding:12px;">
+            <div id="univ-top-chart" class="plot-container" style="height:420px;"></div>
           </div>
-        </div>`);
+        </div>
+      `);
 
       // 대학별 섹션
       univs.forEach((univ, uIdx) => {
         const dfUniv = records.filter((r) => r.univ === univ);
-        let html = `<div class="dept-container" id="univ-${uIdx + 1}">
-            <div class="dept-header">${univ}</div>`;
+
+        let html = `
+          <div class="dept-container" id="univ-${uIdx + 1}">
+            <div class="dept-header">${univ}</div>
+        `;
 
         // 전형유형별 요약
         const apptypesAll = unique(dfUniv.map((r) => r.apptype));
         if (apptypesAll.length) {
-          html += `<div class="subtype-container" id="apptype-summary-${uIdx + 1}">
-              <div class="subtype-header">전형유형별 요약</div>`;
+          html += `
+            <div id="apptype-summary-${uIdx + 1}" style="border:1px solid #e4ddcf;border-radius:12px;padding:14px;background:#fff;margin-bottom:14px;">
+              <div style="font-weight:700;font-size:17px;margin-bottom:10px;">전형유형별 요약</div>
+          `;
           apptypesAll.forEach((ap, aIdx) => {
             const subset = dfUniv.filter((r) => r.apptype === ap);
-            const block = buildPlotBlock(subset, plotCounter, `${ap}`, true);
-            html += `<div class="subtype-container" id="apptype-${uIdx + 1}-${aIdx + 1}" style="background:#fefefe; margin-left: 8px;">
-                <div class="subtype-header" style="font-size:16px;">${ap}</div>
+            const block = buildPlotBlock(subset, plotCounter, ap, true);
+            html += `
+              <div id="apptype-${uIdx + 1}-${aIdx + 1}" style="border:1px solid #e4ddcf;border-radius:12px;padding:14px;background:#fefefe;margin:10px 0 0 8px;">
+                <div style="font-weight:700;font-size:16px;margin-bottom:8px;">${ap}</div>
                 ${block.html}
-              </div>`;
+              </div>
+            `;
             plotsData[plotCounter] = block.data;
             plotCounter++;
           });
@@ -420,39 +492,53 @@ contentEl.insertAdjacentHTML("beforeend", filterSummary);
         // 세부유형별 요약
         const subtypesAll = unique(dfUniv.map((r) => r.subtype));
         if (subtypesAll.length) {
-          html += `<div class="subtype-container" id="summary-container-${uIdx + 1}">
-              <div class="subtype-header">세부유형별 요약</div>`;
+          html += `
+            <div id="summary-container-${uIdx + 1}" style="border:1px solid #e4ddcf;border-radius:12px;padding:14px;background:#fff;margin-bottom:14px;">
+              <div style="font-weight:700;font-size:17px;margin-bottom:10px;">세부유형별 요약</div>
+          `;
           subtypesAll.forEach((st, sIdx) => {
             const subset = dfUniv.filter((r) => r.subtype === st);
-            const block = buildPlotBlock(subset, plotCounter, `${st}`, true);
-            html += `<div class="subtype-container" id="subtype-summary-${uIdx + 1}-${sIdx + 1}" style="background:#fefefe; margin-left: 8px;">
-                <div class="subtype-header" style="font-size:16px;">${st}</div>
+            const block = buildPlotBlock(subset, plotCounter, st, true);
+            html += `
+              <div id="subtype-summary-${uIdx + 1}-${sIdx + 1}" style="border:1px solid #e4ddcf;border-radius:12px;padding:14px;background:#fefefe;margin:10px 0 0 8px;">
+                <div style="font-weight:700;font-size:16px;margin-bottom:8px;">${st}</div>
                 ${block.html}
-              </div>`;
+              </div>
+            `;
             plotsData[plotCounter] = block.data;
             plotCounter++;
           });
           html += `</div>`;
         }
 
-        // 모집단위/전형별 상세
+        // 모집단위 상세
         const univDepts = unique(dfUniv.map((r) => r.dept));
         univDepts.forEach((dept, dIdx) => {
           const dfDept = dfUniv.filter((r) => r.dept === dept);
-          html += `<div class="subtype-container" id="dept-container-${uIdx + 1}-${dIdx + 1}">
-              <div class="subtype-header" style="color:#34495e;">${dIdx + 1}) ${dept}</div>`;
+
+          html += `
+            <div id="dept-container-${uIdx + 1}-${dIdx + 1}" style="border:1px solid #e4ddcf;border-radius:12px;padding:14px;background:#fff;margin-bottom:14px;">
+              <!-- ✅ buildTOC가 찾는 .subtype-header 클래스 반드시 포함 -->
+              <div class="subtype-header" style="font-weight:700;font-size:16px;margin-bottom:10px;color:#34495e;">
+                ${dIdx + 1}) ${dept}
+              </div>
+          `;
+
           const deptSubtypes = unique(dfDept.map((r) => r.subtype));
           deptSubtypes.forEach((st, sIdx) => {
             const subset = dfDept.filter((r) => r.subtype === st);
             if (!subset.length) return;
-            const block = buildPlotBlock(subset, plotCounter, `${st}`, true);
-            html += `<div class="subtype-container" id="subtype-${uIdx + 1}-${dIdx + 1}-${sIdx + 1}" style="margin-left: 10px; background:#fefefe;">
-                <div class="subtype-header" style="font-size:15px;">${sIdx + 1}) ${st}</div>
+            const block = buildPlotBlock(subset, plotCounter, st, true);
+            html += `
+              <div id="subtype-${uIdx + 1}-${dIdx + 1}-${sIdx + 1}" style="border:1px solid #e4ddcf;border-radius:12px;padding:14px;background:#fefefe;margin:10px 0 0 10px;">
+                <div style="font-weight:700;font-size:15px;margin-bottom:8px;">${sIdx + 1}) ${st}</div>
                 ${block.html}
-              </div>`;
+              </div>
+            `;
             plotsData[plotCounter] = block.data;
             plotCounter++;
           });
+
           html += `</div>`;
         });
 
@@ -464,77 +550,91 @@ contentEl.insertAdjacentHTML("beforeend", filterSummary);
       initPlots();
       buildTOC();
       syncStickyTop();
-
     }
-function syncStickyTop(){
-  const header = document.querySelector(".fixed-header");
-  if (!header) return;
-  const h = header.offsetHeight || 0;
-  const top = Math.max(160, h + 16); // 헤더 높이 + 여백
-  document.documentElement.style.setProperty("--stickyTop", top + "px");
-}
-window.addEventListener("resize", syncStickyTop);
 
+    function syncStickyTop() {
+      const header = document.querySelector(".fixed-header");
+      if (!header) return;
+      const h = header.offsetHeight || 0;
+      const top = Math.max(160, h + 16);
+      document.documentElement.style.setProperty("--stickyTop", top + "px");
+    }
+    window.addEventListener("resize", syncStickyTop);
+  </script>
+
+  <script>
     function buildPlotBlock(dataArr, plotId, title, showStats = true, includeHist = false, includeBands = false, includeApptype = false) {
       const convStats = computeStats(dataArr, "conv_grade");
-      const allStats = computeStats(dataArr, "all_subj_grade");
+      const allStats  = computeStats(dataArr, "all_subj_grade");
       const convDetail = computeAdditionalStats(dataArr, "conv_grade");
-      const allDetail = computeAdditionalStats(dataArr, "all_subj_grade");
+      const allDetail  = computeAdditionalStats(dataArr, "all_subj_grade");
       const plotData = createPlotData(dataArr);
-      const statsHtmlConv = showStats ? createStatsHtml(convStats, plotId, true) : "";
-      const statsHtmlAll = showStats ? createStatsHtml(allStats, plotId, false) : "";
+
+      const statsHtmlConv = showStats ? createStatsHtml(convStats) : "";
+      const statsHtmlAll  = showStats ? createStatsHtml(allStats) : "";
       const detailConv = showStats ? createDetailTable(convDetail, "환산등급") : "";
-      const detailAll = showStats ? createDetailTable(allDetail, "전교과등급") : "";
+      const detailAll  = showStats ? createDetailTable(allDetail, "전교과등급") : "";
 
       let extraHtml = "";
+
       if (includeHist) {
-        extraHtml += `<div class="grid-2" style="margin-top:10px;">
-            <div class="card">
-              <h3>전교과등급 히스토그램</h3>
+        extraHtml += `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:10px;">
+            <div style="border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <h3 style="margin:0 0 8px;font-size:15px;">전교과등급 히스토그램</h3>
               <div id="hist-all-${plotId}" class="plot-container" style="height:260px;"></div>
             </div>
-            <div class="card">
-              <h3>환산등급 히스토그램</h3>
+            <div style="border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <h3 style="margin:0 0 8px;font-size:15px;">환산등급 히스토그램</h3>
               <div id="hist-conv-${plotId}" class="plot-container" style="height:260px;"></div>
             </div>
-          </div>`;
+          </div>
+        `;
       }
+
       if (includeBands) {
-        extraHtml += `<div class="grid-2" style="margin-top:10px;">
-            <div class="card">
-              <h3>전교과 등급대별 합격/불합격</h3>
+        extraHtml += `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:10px;">
+            <div style="border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <h3 style="margin:0 0 8px;font-size:15px;">전교과 등급대별 합격/불합격</h3>
               <div id="band-bar-${plotId}" class="plot-container" style="height:280px;"></div>
             </div>
-            <div class="card">
-              <h3>등급대별 통계</h3>
+            <div style="border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <h3 style="margin:0 0 8px;font-size:15px;">등급대별 통계</h3>
               <div id="band-table-${plotId}"></div>
             </div>
-          </div>`;
+          </div>
+        `;
       }
+
       if (includeApptype) {
-        extraHtml += `<div class="grid-2" style="margin-top:10px;">
-            <div class="card">
-              <h3>전형유형별 합/불 현황</h3>
+        extraHtml += `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:10px;">
+            <div style="border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <h3 style="margin:0 0 8px;font-size:15px;">전형유형별 합/불 현황</h3>
               <div id="apptype-bar-${plotId}" class="plot-container" style="height:280px;"></div>
             </div>
-            <div class="card">
-              <h3>전형유형별 통계</h3>
+            <div style="border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <h3 style="margin:0 0 8px;font-size:15px;">전형유형별 통계</h3>
               <div id="apptype-table-${plotId}"></div>
             </div>
-          </div>`;
+          </div>
+        `;
       }
 
       const html = `
-        <div class="visualization-container">
-          <div class="plot-stats-wrapper">
-            <div id="conv-stats-${plotId}" class="stats-container" style="display:none;">${statsHtmlConv}</div>
-            <div id="all-stats-${plotId}" class="stats-container">${statsHtmlAll}</div>
-            <div class="plot-container" id="plot-${plotId}"></div>
-            <div class="additional-stats-container" id="conv-detail-${plotId}" style="display:none;">${detailConv}</div>
-            <div class="additional-stats-container" id="all-detail-${plotId}">${detailAll}</div>
-          </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div id="conv-stats-${plotId}" style="display:none;flex-wrap:wrap;gap:8px;">${statsHtmlConv}</div>
+          <div id="all-stats-${plotId}" style="display:flex;flex-wrap:wrap;gap:8px;">${statsHtmlAll}</div>
+
+          <div class="plot-container" id="plot-${plotId}" style="width:100%;height:220px;"></div>
+
+          <div id="conv-detail-${plotId}" style="display:none;">${detailConv}</div>
+          <div id="all-detail-${plotId}" style="display:block;">${detailAll}</div>
+
           ${extraHtml}
-        </div>`;
+        </div>
+      `;
 
       return { html, data: plotData };
     }
@@ -565,7 +665,8 @@ window.addEventListener("resize", syncStickyTop);
             size: 12,
           },
           customdata: rows.map((r) => [r.dept, r.subtype, r.univ, studentLabel(r)]),
-          hovertemplate: "환산등급: %{x}<br>대학: %{customdata[2]}<br>모집단위: %{customdata[0]}<br>세부유형: %{customdata[1]}<br>%{customdata[3]}<extra></extra>",
+          hovertemplate:
+            "환산등급: %{x}<br>대학: %{customdata[2]}<br>모집단위: %{customdata[0]}<br>세부유형: %{customdata[1]}<br>%{customdata[3]}<extra></extra>",
           showlegend: false,
         };
       });
@@ -585,30 +686,38 @@ window.addEventListener("resize", syncStickyTop);
             size: 12,
           },
           customdata: rows.map((r) => [r.dept, r.subtype, r.univ, studentLabel(r)]),
-          hovertemplate: "전교과등급: %{x}<br>대학: %{customdata[2]}<br>모집단위: %{customdata[0]}<br>세부유형: %{customdata[1]}<br>%{customdata[3]}<extra></extra>",
+          hovertemplate:
+            "전교과등급: %{x}<br>대학: %{customdata[2]}<br>모집단위: %{customdata[0]}<br>세부유형: %{customdata[1]}<br>%{customdata[3]}<extra></extra>",
           showlegend: false,
         };
       });
 
-      return { convTraces: convTraces, allTraces: allTraces };
+      return { convTraces, allTraces };
     }
 
-    function createStatsHtml(stats, plotId, isConv) {
+    function createStatsHtml(stats) {
       const items = [];
-      items.push(`<div class="stats-item stats-total">총 ${stats.total_count}명</div>`);
+      items.push(`<div style="padding:7px 11px;border-radius:8px;background:#e4e0d7;border:1px solid #d6cebf;font-size:13px;font-weight:800;">총 ${stats.total_count}명</div>`);
+
       if (stats.all_pass_count !== undefined) {
-        items.push(`<div class="stats-item stats-pass">합격(전체): ${stats.all_pass_count}명 (${stats.all_pass_rate || "0%"}), 범위 ${fmt(stats.all_pass_min)}~${fmt(stats.all_pass_max)}, 평균 ${fmt(stats.all_pass_mean)}</div>`);
+        items.push(`<div style="padding:7px 11px;border-radius:8px;background:#eef0eb;border:1px solid #d6cebf;font-size:13px;border-left:4px solid var(--primary);">
+          합격(전체): ${stats.all_pass_count}명 (${stats.all_pass_rate || "0%"}), 범위 ${fmt(stats.all_pass_min)}~${fmt(stats.all_pass_max)}, 평균 ${fmt(stats.all_pass_mean)}
+        </div>`);
       }
-      if (stats.pass_count !== undefined) {
-        items.push(`<div class="stats-item stats-pass">합격(일반): ${stats.pass_count}명 (${stats.pass_rate})</div>`);
-      }
-      if (stats.waitlist_count !== undefined) {
-        items.push(`<div class="stats-item stats-wait">충원합격: ${stats.waitlist_count}명 (${stats.waitlist_rate})</div>`);
-      }
-      if (stats.fail_count !== undefined) {
-        const failRate = stats.total_count ? ((stats.fail_count / stats.total_count) * 100).toFixed(1) + "%" : "0.0%";
-        items.push(`<div class="stats-item stats-fail">불합격: ${stats.fail_count}명 (${failRate})</div>`);
-      }
+
+      items.push(`<div style="padding:7px 11px;border-radius:8px;background:#eef0eb;border:1px solid #d6cebf;font-size:13px;border-left:4px solid var(--primary);">
+        합격(일반): ${stats.pass_count}명 (${stats.pass_rate})
+      </div>`);
+
+      items.push(`<div style="padding:7px 11px;border-radius:8px;background:#eef0eb;border:1px solid #d6cebf;font-size:13px;border-left:4px solid #7cab7c;">
+        충원합격: ${stats.waitlist_count}명 (${stats.waitlist_rate})
+      </div>`);
+
+      const failRate = stats.total_count ? ((stats.fail_count / stats.total_count) * 100).toFixed(1) + "%" : "0.0%";
+      items.push(`<div style="padding:7px 11px;border-radius:8px;background:#eef0eb;border:1px solid #d6cebf;font-size:13px;border-left:4px solid #d26c5b;">
+        불합격: ${stats.fail_count}명 (${failRate})
+      </div>`);
+
       return items.join("");
     }
 
@@ -616,7 +725,7 @@ window.addEventListener("resize", syncStickyTop);
       const rows = RESULT_ORDER.map((res) => {
         const d = detail[res] || {};
         if (!d.count) return `<tr><td>${res}</td><td colspan="6">데이터 없음</td></tr>`;
-        return `<tr class="${res === "합격" ? "pass-row" : res === "불합격" ? "fail-row" : "waitlist-row"}">
+        return `<tr>
           <td>${res}</td>
           <td>${d.count}명</td>
           <td>${fmt(d.mean)}</td>
@@ -626,30 +735,52 @@ window.addEventListener("resize", syncStickyTop);
           <td>${fmtRange(d.q1, d.q3)}</td>
         </tr>`;
       }).join("");
+
       return `
-        <div class="card">
-          <h3>${title} 상세 통계</h3>
-          <table class="stats-table">
-            <thead><tr><th>결과</th><th>인원</th><th>평균</th><th>표준편차</th><th>범위</th><th>중앙값</th><th>1Q-3Q</th></tr></thead>
+        <div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;">
+          <h3 style="margin:0 0 8px;font-size:15px;">${title} 상세 통계</h3>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="border:1px solid #e4ddcf;padding:7px;background:#f1ede5;">결과</th>
+                <th style="border:1px solid #e4ddcf;padding:7px;background:#f1ede5;">인원</th>
+                <th style="border:1px solid #e4ddcf;padding:7px;background:#f1ede5;">평균</th>
+                <th style="border:1px solid #e4ddcf;padding:7px;background:#f1ede5;">표준편차</th>
+                <th style="border:1px solid #e4ddcf;padding:7px;background:#f1ede5;">범위</th>
+                <th style="border:1px solid #e4ddcf;padding:7px;background:#f1ede5;">중앙값</th>
+                <th style="border:1px solid #e4ddcf;padding:7px;background:#f1ede5;">1Q-3Q</th>
+              </tr>
+            </thead>
             <tbody>${rows}</tbody>
           </table>
-        </div>`;
+        </div>
+      `;
     }
 
     function computeStats(dataArr, gradeKey) {
       const total = dataArr.length;
-      const counts = RESULT_ORDER.reduce((acc, r) => { acc[r] = dataArr.filter((d) => d.result === r).length; return acc; }, {});
-      const passData = dataArr.filter((d) => d.result === "합격" || d.result === "충원합격").map((d) => d[gradeKey]).filter((v) => v !== null);
+      const counts = RESULT_ORDER.reduce((acc, r) => {
+        acc[r] = dataArr.filter((d) => d.result === r).length;
+        return acc;
+      }, {});
+
+      const passData = dataArr
+        .filter((d) => d.result === "합격" || d.result === "충원합격")
+        .map((d) => d[gradeKey])
+        .filter((v) => v !== null);
+
       const stats = {
         total_count: total,
         pass_count: counts["합격"] || 0,
         waitlist_count: counts["충원합격"] || 0,
         fail_count: counts["불합격"] || 0,
       };
+
       stats.all_pass_count = stats.pass_count + stats.waitlist_count;
       stats.pass_rate = total ? ((stats.pass_count / total) * 100).toFixed(1) + "%" : "0.0%";
       stats.waitlist_rate = total ? ((stats.waitlist_count / total) * 100).toFixed(1) + "%" : "0.0%";
       stats.all_pass_rate = total ? ((stats.all_pass_count / total) * 100).toFixed(1) + "%" : "0.0%";
+
       if (passData.length) {
         stats.all_pass_min = Math.min(...passData);
         stats.all_pass_max = Math.max(...passData);
@@ -678,8 +809,21 @@ window.addEventListener("resize", syncStickyTop);
     }
 
     function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
-    function stddev(arr) { if (arr.length < 2) return 0; const m = mean(arr); return Math.sqrt(arr.reduce((s, v) => s + Math.pow(v - m, 2), 0) / (arr.length - 1)); }
-    function percentile(arr, p) { if (!arr.length) return 0; const s = [...arr].sort((a, b) => a - b); const rank = (p / 100) * (s.length - 1); const l = Math.floor(rank); const h = Math.ceil(rank); if (l === h) return s[l]; const w = rank - l; return s[l] * (1 - w) + s[h] * w; }
+    function stddev(arr) {
+      if (arr.length < 2) return 0;
+      const m = mean(arr);
+      return Math.sqrt(arr.reduce((s, v) => s + Math.pow(v - m, 2), 0) / (arr.length - 1));
+    }
+    function percentile(arr, p) {
+      if (!arr.length) return 0;
+      const s = [...arr].sort((a, b) => a - b);
+      const rank = (p / 100) * (s.length - 1);
+      const l = Math.floor(rank);
+      const h = Math.ceil(rank);
+      if (l === h) return s[l];
+      const w = rank - l;
+      return s[l] * (1 - w) + s[h] * w;
+    }
     function fmt(v) { return v === undefined || v === null || Number.isNaN(v) ? "-" : Number(v).toFixed(2); }
     function fmtRange(a, b) { if ([a, b].some((x) => x === undefined || x === null || Number.isNaN(x))) return "-"; return `${Number(a).toFixed(2)} ~ ${Number(b).toFixed(2)}`; }
 
@@ -688,8 +832,21 @@ window.addEventListener("resize", syncStickyTop);
         height: 220,
         autosize: true,
         margin: { t: 12, b: 45, l: 55, r: 25 },
-        xaxis: { range: [0.5, 9.5], tickmode: "array", tickvals: [1,2,3,4,5,6,7,8,9], ticktext: ["1","2","3","4","5","6","7","8","9"], title: "등급" },
-        yaxis: { range: [-0.05, 0.05], tickmode: "array", tickvals: [0.01, 0.0, -0.03], ticktext: ["", "", ""], showgrid: false, zeroline: false },
+        xaxis: {
+          range: [0.5, 9.5],
+          tickmode: "array",
+          tickvals: [1,2,3,4,5,6,7,8,9],
+          ticktext: ["1","2","3","4","5","6","7","8","9"],
+          title: "등급"
+        },
+        yaxis: {
+          range: [-0.05, 0.05],
+          tickmode: "array",
+          tickvals: [0.01, 0.0, -0.03],
+          ticktext: ["", "", ""],
+          showgrid: false,
+          zeroline: false
+        },
         showlegend: false,
         plot_bgcolor: "#fff",
         paper_bgcolor: "#fff",
@@ -705,7 +862,8 @@ window.addEventListener("resize", syncStickyTop);
         Plotly.newPlot(div, traces, createLayout(), { displayModeBar: false, responsive: true });
         plotInitialized[id] = true;
       });
-      // 히스토그램 + 등급대 (전체 요약용)
+
+      // 전체 요약 블록에만 붙는 추가 시각화
       Object.keys(plotsData).forEach((pid) => {
         if (document.getElementById(`hist-all-${pid}`)) {
           renderHist(lastRecords, "all_subj_grade", `hist-all-${pid}`, "전교과등급");
@@ -720,6 +878,7 @@ window.addEventListener("resize", syncStickyTop);
           renderApptypeStats(lastRecords, pid);
         }
       });
+
       renderUnivTop(lastRecords);
     }
 
@@ -735,43 +894,52 @@ window.addEventListener("resize", syncStickyTop);
 
     function bindGradeToggle() {
       const btnConv = document.getElementById("btn-conv");
-      const btnAll = document.getElementById("btn-all");
+      const btnAll  = document.getElementById("btn-all");
       btnConv.onclick = () => switchGrade("conv");
-      btnAll.onclick = () => switchGrade("all_subj");
+      btnAll.onclick  = () => switchGrade("all_subj");
     }
 
     function switchGrade(type) {
       if (currentGradeType === type) return;
       currentGradeType = type;
+
       document.getElementById("btn-conv").classList.toggle("active", type === "conv");
       document.getElementById("btn-all").classList.toggle("active", type === "all_subj");
+
       document.getElementById("grade-label").textContent = type === "conv" ? "환산등급" : "전교과100 등급";
-const pg = document.getElementById("print-grade-text");
-if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급";
+      const pg = document.getElementById("print-grade-text");
+      if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급";
 
       document.querySelectorAll("[id^='conv-stats-']").forEach((el) => el.style.display = type === "conv" ? "flex" : "none");
-      document.querySelectorAll("[id^='all-stats-']").forEach((el) => el.style.display = type === "all_subj" ? "flex" : "none");
-      document.querySelectorAll("[id^='conv-detail-']").forEach((el) => el.style.display = type === "conv" ? "block" : "none");
+      document.querySelectorAll("[id^='all-stats-']").forEach((el)  => el.style.display = type === "all_subj" ? "flex" : "none");
+      document.querySelectorAll("[id^='conv-detail-']").forEach((el)=> el.style.display = type === "conv" ? "block" : "none");
       document.querySelectorAll("[id^='all-detail-']").forEach((el) => el.style.display = type === "all_subj" ? "block" : "none");
+
       updateAllPlots();
     }
 
     function buildTOC() {
       const toc = document.getElementById("toc-content");
       let html = "";
+
       document.querySelectorAll(".dept-container").forEach((container) => {
         const header = container.querySelector(".dept-header");
         if (!header) return;
+
         const id = container.id;
-        html += `<div class="toc-university" onclick="scrollToElement('${id}')">${header.textContent}</div>`;
+        html += `<div style="font-weight:700;cursor:pointer;padding:6px;border-radius:8px;color:var(--primary-dark);" onclick="scrollToElement('${id}')">${header.textContent}</div>`;
+
         const apSummary = container.querySelector("[id^='apptype-summary-']");
-        if (apSummary) html += `<div class="toc-subitems"><div class="toc-subtype-item" onclick="scrollToElement('${apSummary.id}')">전형유형별 요약</div></div>`;
+        if (apSummary) html += `<div style="margin-left:10px;"><div style="font-size:13px;cursor:pointer;padding:4px 6px;border-radius:6px;" onclick="scrollToElement('${apSummary.id}')">전형유형별 요약</div></div>`;
+
         const stSummary = container.querySelector("[id^='summary-container-']");
-        if (stSummary) html += `<div class="toc-subitems"><div class="toc-subtype-item" onclick="scrollToElement('${stSummary.id}')">세부유형별 요약</div></div>`;
+        if (stSummary) html += `<div style="margin-left:10px;"><div style="font-size:13px;cursor:pointer;padding:4px 6px;border-radius:6px;" onclick="scrollToElement('${stSummary.id}')">세부유형별 요약</div></div>`;
+
+        // ✅ 모집단위(학과)까지 목차로 내리기
         container.querySelectorAll("[id^='dept-container-']").forEach((deptEl) => {
-          const deptHeader = deptEl.querySelector(".subtype-header");
+          const deptHeader = deptEl.querySelector(".subtype-header"); // 위에서 넣은 클래스
           if (!deptHeader) return;
-          html += `<div class="toc-subitems"><div class="toc-dept-item" onclick="scrollToElement('${deptEl.id}')">${deptHeader.textContent}</div></div>`;
+          html += `<div style="margin-left:14px;font-size:12.5px;cursor:pointer;padding:4px 6px;border-radius:6px;color:#2f3c32;" onclick="scrollToElement('${deptEl.id}')">- ${deptHeader.textContent}</div>`;
         });
       });
       toc.innerHTML = html;
@@ -784,21 +952,26 @@ if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급
       const top = el.getBoundingClientRect().top + window.pageYOffset - headerHeight - 10;
       window.scrollTo({ top, behavior: "smooth" });
     }
-    window.scrollToElement = scrollToElement; // for inline onclick
+    window.scrollToElement = scrollToElement;
 
     function makeHistogramSeries(records, key) {
-      const passArr = records.filter((r) => r.result === "합격" || r.result === "충원합격").map((r) => r[key]).filter((v) => v !== null);
-      const failArr = records.filter((r) => r.result === "불합격").map((r) => r[key]).filter((v) => v !== null);
+      const passArr = records
+        .filter((r) => r.result === "합격" || r.result === "충원합격")
+        .map((r) => r[key]).filter((v) => v !== null);
+      const failArr = records
+        .filter((r) => r.result === "불합격")
+        .map((r) => r[key]).filter((v) => v !== null);
+
       const edges = [];
       for (let v = BINS.start; v < BINS.end; v += BINS.size) edges.push(Number(v.toFixed(4)));
       edges.push(BINS.end);
+
       const bins = edges.length - 1;
       const passCounts = new Array(bins).fill(0);
       const failCounts = new Array(bins).fill(0);
       const center = [];
-      for (let i = 0; i < bins; i++) {
-        center.push((edges[i] + edges[i + 1]) / 2);
-      }
+      for (let i = 0; i < bins; i++) center.push((edges[i] + edges[i + 1]) / 2);
+
       const fillCounts = (arr, target) => {
         arr.forEach((v) => {
           if (v < BINS.start || v > BINS.end) return;
@@ -808,6 +981,7 @@ if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급
       };
       fillCounts(passArr, passCounts);
       fillCounts(failArr, failCounts);
+
       return { center, passCounts, failCounts };
     }
 
@@ -828,13 +1002,7 @@ if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급
         const pass = inBand.filter((r) => r.result === "합격" || r.result === "충원합격").length;
         const fail = inBand.filter((r) => r.result === "불합격").length;
         const total = pass + fail;
-        return {
-          label: b.label,
-          pass,
-          fail,
-          total,
-          passRate: total ? (pass / total) * 100 : 0,
-        };
+        return { label: b.label, pass, fail, total, passRate: total ? (pass / total) * 100 : 0 };
       });
     }
 
@@ -847,6 +1015,7 @@ if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급
 
       const barEl = document.getElementById(`band-bar-${targetPlotId}`);
       const tableEl = document.getElementById(`band-table-${targetPlotId}`);
+
       if (barEl) {
         if (!hasData) {
           barEl.innerHTML = '<div class="empty">데이터 없음</div>';
@@ -862,18 +1031,11 @@ if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급
           }, { displayModeBar: false, responsive: true });
         }
       }
+
       if (tableEl) {
         const rows = stats.map((s) => {
-          if (!s.total) {
-            return `<tr><td>${s.label}</td><td colspan="4">데이터 없음</td></tr>`;
-          }
-          return `<tr>
-            <td>${s.label}</td>
-            <td>${s.pass}</td>
-            <td>${s.fail}</td>
-            <td>${s.total}</td>
-            <td>${s.passRate.toFixed(1)}%</td>
-          </tr>`;
+          if (!s.total) return `<tr><td>${s.label}</td><td colspan="4">데이터 없음</td></tr>`;
+          return `<tr><td>${s.label}</td><td>${s.pass}</td><td>${s.fail}</td><td>${s.total}</td><td>${s.passRate.toFixed(1)}%</td></tr>`;
         }).join("");
         tableEl.innerHTML = `<table class="stats-table">
           <thead><tr><th>등급대</th><th>합격</th><th>불합격</th><th>총원</th><th>합격률</th></tr></thead>
@@ -934,18 +1096,13 @@ if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급
           }, { displayModeBar: false, responsive: true });
         }
       }
+
       if (tableEl) {
         const rows = stats.map((s) => {
-          if (!s.total) return `<tr><td>${s.apptype}</td><td colspan="6">데이터 없음</td></tr>`;
+          if (!s.total) return `<tr><td>${s.apptype}</td><td colspan="7">데이터 없음</td></tr>`;
           return `<tr>
-            <td>${s.apptype}</td>
-            <td>${s.total}</td>
-            <td>${s.pass}</td>
-            <td>${s.wait}</td>
-            <td>${s.fail}</td>
-            <td>${s.passRate.toFixed(1)}%</td>
-            <td>${s.waitRate.toFixed(1)}%</td>
-            <td>${s.failRate.toFixed(1)}%</td>
+            <td>${s.apptype}</td><td>${s.total}</td><td>${s.pass}</td><td>${s.wait}</td><td>${s.fail}</td>
+            <td>${s.passRate.toFixed(1)}%</td><td>${s.waitRate.toFixed(1)}%</td><td>${s.failRate.toFixed(1)}%</td>
           </tr>`;
         }).join("");
         tableEl.innerHTML = `<table class="stats-table">
@@ -953,12 +1110,12 @@ if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급
           <tbody>${rows}</tbody>
         </table>`;
       }
-
     }
 
     function renderUnivTop(records) {
       const univTopEl = document.getElementById("univ-top-chart");
       if (!univTopEl) return;
+
       const grouped = {};
       records.forEach((r) => {
         const key = r.univ || "미상";
@@ -968,107 +1125,61 @@ if (pg) pg.textContent = type === "conv" ? "환산등급" : "전교과100 등급
         else if (r.result === "충원합격") grouped[key].wait += 1;
         else if (r.result === "불합격") grouped[key].fail += 1;
       });
+
       const sorted = Object.entries(grouped)
         .map(([univ, g]) => ({ univ, ...g }))
         .filter((x) => x.total > 0)
         .sort((a, b) => b.total - a.total)
         .slice(0, 20);
+
+      if (!sorted.length) {
+        univTopEl.innerHTML = '<div class="empty">데이터 없음</div>';
+        return;
+      }
+
       const labelsTop = sorted.map((s) => s.univ);
       const passTop = sorted.map((s) => s.pass);
       const waitTop = sorted.map((s) => s.wait);
       const failTop = sorted.map((s) => s.fail);
-      if (!sorted.length) {
-        univTopEl.innerHTML = '<div class="empty">데이터 없음</div>';
-      } else {
-        const dynamicHeight = Math.max(360, 26 * labelsTop.length + 110);
-        univTopEl.style.height = dynamicHeight + "px";
-        Plotly.newPlot(univTopEl, [
-          { y: labelsTop, x: passTop, type: "bar", name: "합격", orientation: "h", marker: { color: COLOR_MAP["합격"].border } },
-          { y: labelsTop, x: waitTop, type: "bar", name: "충원합격", orientation: "h", marker: { color: COLOR_MAP["충원합격"].border } },
-          { y: labelsTop, x: failTop, type: "bar", name: "불합격", orientation: "h", marker: { color: COLOR_MAP["불합격"].border } },
-        ], {
-          height: dynamicHeight,
-          barmode: "stack",
-          margin: { t: 24, b: 40, l: 150, r: 24 },
-          xaxis: { title: "인원" },
-        }, { displayModeBar: false, responsive: true });
-      }
+
+      const dynamicHeight = Math.max(360, 26 * labelsTop.length + 110);
+      univTopEl.style.height = dynamicHeight + "px";
+
+      Plotly.newPlot(univTopEl, [
+        { y: labelsTop, x: passTop, type: "bar", name: "합격", orientation: "h", marker: { color: COLOR_MAP["합격"].border } },
+        { y: labelsTop, x: waitTop, type: "bar", name: "충원합격", orientation: "h", marker: { color: COLOR_MAP["충원합격"].border } },
+        { y: labelsTop, x: failTop, type: "bar", name: "불합격", orientation: "h", marker: { color: COLOR_MAP["불합격"].border } },
+      ], {
+        height: dynamicHeight,
+        barmode: "stack",
+        margin: { t: 24, b: 40, l: 150, r: 24 },
+        xaxis: { title: "인원" },
+      }, { displayModeBar: false, responsive: true });
     }
 
     function renderHist(records, key, targetId, title) {
       const el = document.getElementById(targetId);
       if (!el) return;
+
       const { center, passCounts, failCounts } = makeHistogramSeries(records, key);
       const hasData = passCounts.some((c) => c > 0) || failCounts.some((c) => c > 0);
       if (!hasData) { el.innerHTML = '<div class="empty">데이터 없음</div>'; return; }
+
       const maxVal = Math.max(...passCounts, ...failCounts, 0);
-      const traces = [
-        {
-          x: center,
-          y: passCounts,
-          type: "bar",
-          name: "합격(충원포함)",
-          marker: { color: COLOR_MAP["합격"].border },
-          width: BINS.size * 0.9,
-        },
-        {
-          x: center,
-          y: failCounts.map((v) => -v),
-          type: "bar",
-          name: "불합격",
-          marker: { color: COLOR_MAP["불합격"].border },
-          width: BINS.size * 0.9,
-        },
-      ];
-      Plotly.newPlot(el, traces, {
+
+      Plotly.newPlot(el, [
+        { x: center, y: passCounts, type: "bar", name: "합격(충원포함)", marker: { color: COLOR_MAP["합격"].border }, width: BINS.size * 0.9 },
+        { x: center, y: failCounts.map((v) => -v), type: "bar", name: "불합격", marker: { color: COLOR_MAP["불합격"].border }, width: BINS.size * 0.9 },
+      ], {
         height: 260,
         barmode: "relative",
         bargap: 0.02,
         margin: { t: 20, b: 45, l: 50, r: 20 },
         xaxis: { title: "등급", range: [BINS.start, BINS.end] },
-        yaxis: {
-          title: "인원(+합격 / -불합격)",
-          zeroline: true,
-          range: [-maxVal * 1.2, maxVal * 1.2],
-        },
+        yaxis: { title: "인원(+합격 / -불합격)", zeroline: true, range: [-maxVal * 1.2, maxVal * 1.2] },
       }, { displayModeBar: false, responsive: true });
     }
-
   </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script>
-function shareAsImage() {
-    const reportArea = document.getElementById('report');
-    if(reportArea.hidden) {
-        alert("먼저 보고서를 생성해주세요!");
-        return;
-    }
-    
-    // 로딩 표시용 (데이터가 많으면 시간이 걸릴 수 있음)
-    const btn = event.target;
-    const originalText = btn.innerText;
-    btn.innerText = "📸 이미지 생성 중...";
-    btn.disabled = true;
-
-    html2canvas(reportArea, {
-        useCORS: true,
-        backgroundColor: "#f6f4ef", // 배경색 유지
-        scale: 2 // 고화질 설정
-    }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = '풍무고_수시분석결과_' + new Date().toLocaleDateString() + '.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        
-        btn.innerText = originalText;
-        btn.disabled = false;
-    }).catch(err => {
-        console.error(err);
-        alert("이미지 생성 중 오류가 발생했습니다.");
-        btn.innerText = originalText;
-        btn.disabled = false;
-    });
-}
-</script>
+</body>
 </html>
