@@ -198,6 +198,36 @@
         height: 320px !important;
       }
     }
+    /* ✅ 파일선택(input) + 버튼(actions) 한 줄 고정 */
+.panel .field{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;      /* 데스크톱에서 2줄 방지 */
+}
+
+/* ✅ file input이 버튼을 밀어내지 않게 폭 제한 */
+.panel .field #file-input{
+  flex: 1 1 auto;         /* 남는 공간은 먹되 */
+  min-width: 260px;
+  max-width: 520px;       /* 너무 커져서 버튼을 아래로 밀지 않게 */
+}
+
+/* ✅ 버튼들도 한 줄 고정 */
+.panel .field .actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: nowrap;      /* 버튼 2개가 줄바꿈 안 되게 */
+  flex: 0 0 auto;
+}
+
+/* ✅ 화면이 좁을 때만 줄바꿈 허용(모바일/작은 창 대응) */
+@media (max-width: 560px){
+  .panel .field{ flex-wrap: wrap; }
+  .panel .field #file-input{ max-width: 100%; }
+  .panel .field .actions{ width: 100%; }
+}
+
   </style>
 </head>
 
