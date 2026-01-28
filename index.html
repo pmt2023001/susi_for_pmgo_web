@@ -640,15 +640,36 @@
     }
 
     function createPlotData(dataArr) {
-      const studentLabel = (r) => {
-        const name = r.student_name || "";
-        const g = r.grade || "";
-        const c = r.class_no || "";
-        const n = r.student_no || "";
-        const tail = [g, c, n].filter(Boolean).join("-");
-        if (!name && !tail) return "";
-        return tail ? `학생: ${name || ""} (${tail})` : `학생: ${name}`;
-      };
+const studentLabel = (r) => {
+  // 이름 마스킹: 가운데 전부 * (예: 고***재, 3***4)
+  const maskName = (name) => {
+    name = (name || "").trim();
+    if (!name) return "";
+
+    // 공백 포함 이름(예: "홍 길동")도 처리
+    const raw = name.replace(/\s+/g, "");
+    const len = raw.length;
+
+    if (len === 1) return raw;                 // "고"
+    if (len === 2) return raw[0] + "*";        // "고*"
+    return raw[0] + "*".repeat(len - 2) + raw[len - 1]; // "고***재"
+  };
+
+  // 학년-반-번호는 개인정보 민감도 낮지만, 외부용이면 노출 최소화 권장
+  // → 필요하면 켜고 끌 수 있게 옵션화
+  const SHOW_ID = false; // true로 바꾸면 (학년-반-번호) 표시
+
+  const masked = maskName(r.student_name);
+  const g = (r.grade || "").trim();
+  const c = (r.class_no || "").trim();
+  const n = (r.student_no || "").trim();
+  const tail = [g, c, n].filter(Boolean).join("-");
+
+  if (!masked && !(SHOW_ID && tail)) return "";
+  if (SHOW_ID && tail) return `학생: ${masked || "익명"} (${tail})`;
+  return `학생: ${masked || "익명"}`;
+};
+
 
       const convTraces = RESULT_ORDER.map((res) => {
         const rows = dataArr.filter((r) => r.result === res && r.conv_grade !== null);
