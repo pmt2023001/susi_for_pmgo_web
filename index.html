@@ -340,7 +340,7 @@
 
 /* 본문 첫 번째 요약 박스(출력 기준)가 위에 너무 붙지 않게 */
 #content-area > .dept-container:first-child{
-  margin-top: 6px;
+  margin-top: 10px;
 }
 /* ===== 출력 모드 분기 ===== */
 /* 기본(전체 출력): 제한 없음 */
@@ -417,13 +417,13 @@
 
     generateBtn.addEventListener("click", handleGenerate);
 
-    document.getElementById("print-btn").addEventListener("click", () => {
-      if (reportEl.hidden) {
-        alert("먼저 보고서를 생성해주세요!");
-        return;
-      }
-      window.print();
-    });
+   <div class="actions">
+  <button class="primary" id="generate-btn">보고서 생성</button>
+  <button id="print-overall-btn">🖨️ 현황 출력(1부)</button>
+  <button id="print-capital-btn">🖨️ 서울+수도권 출력</button>
+  <button id="print-full-btn">🖨️ 전체 출력</button>
+</div>
+
 
     function setStatus(msg, isError = false) {
       statusEl.textContent = msg;
@@ -533,6 +533,26 @@
     function unique(arr) {
       return Array.from(new Set(arr)).filter(Boolean).sort();
     }
+function printWithMode(mode) {
+  if (reportEl.hidden) {
+    alert("먼저 보고서를 생성해주세요!");
+    return;
+  }
+
+  document.body.classList.remove("print-overall", "print-capital", "print-special");
+
+  if (mode === "overall") document.body.classList.add("print-overall");
+  if (mode === "capital") document.body.classList.add("print-capital");
+  if (mode === "special") document.body.classList.add("print-special");
+
+  window.print();
+
+  document.body.classList.remove("print-overall", "print-capital", "print-special");
+}
+
+document.getElementById("print-overall-btn").addEventListener("click", () => printWithMode("overall"));
+document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
+document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
 
     function renderFullReport(records) {
       plotsData = {};
