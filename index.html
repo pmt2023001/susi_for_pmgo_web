@@ -187,6 +187,16 @@
         box-shadow: none;
         border: none;
       }
+body.print-overall #report .dept-container:not(#overall-summary) { display:none !important; }
+body.print-capital #report .dept-container:not(#capital-summary) { display:none !important; }
+body.print-special #report .dept-container:not(#special-summary) { display:none !important; }
+
+      body.print-overall #overall-summary,
+body.print-capital #capital-summary,
+body.print-special #special-summary {
+  page-break-before: auto !important;
+  break-before: auto !important;
+}
 
       /* ✅ 첫 블록은 강제 페이지 브레이크 제거 */
       #overall-summary {
@@ -554,6 +564,120 @@ document.getElementById("print-overall-btn").addEventListener("click", () => pri
 document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
 document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
 
+// ===== (A) 대학명 정규화 / 캠퍼스 판정 / 지역 보정 =====
+
+// 1) 상위권(일반) 대학 고정 리스트 (필요시 계속 추가)
+const TOP_TIER_UNIVS = [
+  "서울대","연세대","고려대","서강대","성균관대","한양대",
+  "중앙대","경희대","한국외대","이화여대",
+  "건국대","동국대","홍익대","숙명여대"
+];
+
+// 2) 특수목적대학(특목대) 고정 리스트(필요시 추가/수정)
+const SPECIAL_PURPOSE_UNIVS = [
+  // 이공계 특성화
+  "KAIST","포스텍","GIST","DGIST","UNIST","한국에너지공대",
+  // 사관/특수
+  "육사","해사","공사","국간사","경찰대"
+];
+
+// 3) 문자열 정규화(공백/대학/대학교 등 흔한 흔들림 완화)
+function normalizeUnivName(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim();
+
+  // 괄호 앞뒤 공백 정리
+  s = s.replace(/\s*\(\s*/g, "(").replace(/\s*\)\s*/g, ")");
+
+  // 흔한 접미 정리(원하면 더 추가 가능)
+  s = s.replace(/대학교/g, "").replace(/대학$/g, "");
+
+  return s;
+}
+
+// 4) "고려대(세종)" 같은 캠퍼스 태그 추출
+function getCampusTag(univName) {
+  const m = univName.match(/\(([^)]+)\)/);
+  return m ? m[1].trim() : ""; // 예: "세종", "안암", "ERICA", "미래", "글로컬"
+}
+
+// 5) 대학명 기반 수도권 판정(지역값이 비어 있거나, 캠퍼스 예외가 필요한 경우)
+function inferCapitalByUniv(univRaw) {
+  const u = normalizeUnivName(univRaw);
+  const campus = getCampusTag(u);
+
+  // ----- 캠퍼스 예외(중요) -----
+  // 고려대(세종) = 비수도권(세종)
+  if (u.includes("고려대") && campus.includes("세종")) return false;
+
+  // 연세대(미래) = 원주(강원) -> 비수도권
+  if (u.includes("연세대") && campus.includes("미래")) return false;
+
+  // 건국대(글로컬) = 충주 -> 비수도권
+  if (u.includes("건국대") && campus.includes("글로컬")) return false;
+
+  // ----- 수도권으로 보는 케이스(캠퍼스 표기가 있어도 수도권일 수 있음) -----
+  // 한양대(ERICA) = 경기(안산) -> 수도권
+  if (u.includes("한양대") && campus.toUpperCase().includes("ERICA")) return true;
+
+  // ----- 기본 대학명 매칭(수도권으로 볼 대학들) -----
+  // 여기서 “서울권/수도권 대학”을 넓게 잡을지, 좁게 잡을지 네 기준대로 확장 가능
+  const capitalByName = [
+    "서울대","연세대","고려대","서강대","성균관대","한양대",
+    "중앙대","경희대","한국외대","이화여대","건국대","동국대",
+    "홍익대","숙명여대",
+    // 수도권 주요 대학 예시(원하면 추가)
+    "인하대","아주대","가천대","단국대","국민대","숭실대","세종대","광운대","서울시립대"
+  ];
+
+  // "XX대(캠퍼스)"에서 괄호 제거한 본체만 비교
+  const base = u.replace(/\([^)]+\)/g, "").trim();
+  if (capitalByName.includes(base)) return true;
+
+  return null; // 모름(판정 불가)
+}
+
+// 6) 최종 수도권 판정: region이 있으면 우선 쓰되, 캠퍼스 예외는 대학명으로 덮어씀
+function isCapitalRegion(rec) {
+  const reg = (rec.region || "").trim();
+  const byRegion = (reg === "서울" || reg === "경기" || reg === "인천");
+
+  const byUniv = inferCapitalByUniv(rec.univ); // true/false/null
+
+  // 캠퍼스 예외처럼 "대학명이 명확히 말해주는 경우"는 대학명 판정 우선
+  if (byUniv === true) return true;
+  if (byUniv === false) return false;
+
+  // 대학명으로 판단 못 하면 지역값 사용
+  return byRegion;
+}
+
+// 7) 특목대 판정(대학명 정규화 후 베이스명 비교)
+function isSpecialPurposeUniv(univRaw) {
+  const u = normalizeUnivName(univRaw);
+  const base = u.replace(/\([^)]+\)/g, "").trim();
+
+  // 영어/한글 혼용 대응(원하면 더 보강)
+  const key = base.toUpperCase();
+  if (key === "KAIST") return true;
+  if (key === "GIST") return true;
+  if (key === "DGIST") return true;
+  if (key === "UNIST") return true;
+
+  // 한글 명칭들
+  if (base.includes("포스텍")) return true;
+  if (base.includes("한국에너지공대")) return true;
+  if (base.includes("경찰대")) return true;
+  if (base.includes("육사")) return true;
+  if (base.includes("해사")) return true;
+  if (base.includes("공사")) return true;
+  if (base.includes("국간사")) return true;
+
+  // 혹시 리스트로 관리하고 싶으면 아래도 병행
+  return SPECIAL_PURPOSE_UNIVS.includes(base);
+}
+
+    
     function renderFullReport(records) {
       plotsData = {};
       plotInitialized = {};
@@ -648,6 +772,51 @@ contentEl.insertAdjacentHTML("beforeend", `
       `);
       plotCounter++;
 
+      // ✅ 서울+수도권 섹션
+const capitalRecords = records.filter(isCapitalRegion);
+
+// “상위권 대학”만 보고 싶으면 여기서 한번 더 필터(없으면 수도권 전체로)
+const capitalTopTier = capitalRecords.filter(r => {
+  const base = normalizeUnivName(r.univ).replace(/\([^)]+\)/g, "").trim();
+  return TOP_TIER_UNIVS.includes(base);
+});
+
+const capitalTarget = capitalTopTier.length ? capitalTopTier : capitalRecords;
+
+const capitalBlock = buildPlotBlock(capitalTarget, plotCounter, "서울+수도권", true, true, true, true);
+plotsData[plotCounter] = capitalBlock.data;
+
+contentEl.insertAdjacentHTML("beforeend", `
+  <div class="dept-container" id="capital-summary">
+    <div class="dept-header" style="border-bottom:2px solid #2c3e50;">서울+수도권 대학 지원 및 합/불 현황</div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:10px;">
+      기준: (1) 지역=서울/경기/인천 또는 (2) 대학명 보정(캠퍼스 예외 포함) · 대상 ${capitalTarget.length}건
+      ${capitalTopTier.length ? " · (상위권 대학 리스트 적용)" : ""}
+    </div>
+    ${capitalBlock.html}
+  </div>
+`);
+plotCounter++;
+
+
+// ✅ 특목대 섹션
+const specialRecords = records.filter(r => isSpecialPurposeUniv(r.univ));
+
+const specialBlock = buildPlotBlock(specialRecords, plotCounter, "특수목적대학", true, true, true, true);
+plotsData[plotCounter] = specialBlock.data;
+
+contentEl.insertAdjacentHTML("beforeend", `
+  <div class="dept-container" id="special-summary">
+    <div class="dept-header" style="border-bottom:2px solid #8e44ad;">특수목적대학 지원 및 합/불 현황</div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:10px;">
+      기준: 특성화 이공계/사관학교/경찰대 등 · 대상 ${specialRecords.length}건
+    </div>
+    ${specialBlock.html}
+  </div>
+`);
+plotCounter++;
+
+      
       // TOP20
       contentEl.insertAdjacentHTML("beforeend", `
         <div class="dept-container" id="univ-top-global">
