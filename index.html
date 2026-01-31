@@ -432,13 +432,6 @@ document.getElementById("print-overall-btn").addEventListener("click", () => pri
 document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
 document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
 
-  <button class="primary" id="generate-btn">보고서 생성</button>
-  <button id="print-overall-btn">🖨️ 현황 출력(1부)</button>
-  <button id="print-capital-btn">🖨️ 서울+수도권 출력</button>
-  <button id="print-full-btn">🖨️ 전체 출력</button>
-</div>
-
-
     function setStatus(msg, isError = false) {
       statusEl.textContent = msg;
       statusEl.style.color = isError ? "#c0392b" : "#607089";
