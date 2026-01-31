@@ -427,7 +427,11 @@ body.print-special #special-summary {
 
     generateBtn.addEventListener("click", handleGenerate);
 
-   <div class="actions">
+    // ✅ 인쇄 버튼(3종) 이벤트
+document.getElementById("print-overall-btn").addEventListener("click", () => printWithMode("overall"));
+document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
+document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
+
   <button class="primary" id="generate-btn">보고서 생성</button>
   <button id="print-overall-btn">🖨️ 현황 출력(1부)</button>
   <button id="print-capital-btn">🖨️ 서울+수도권 출력</button>
@@ -576,7 +580,7 @@ const TOP_TIER_UNIVS = [
 // 2) 특수목적대학(특목대) 고정 리스트(필요시 추가/수정)
 const SPECIAL_PURPOSE_UNIVS = [
   // 이공계 특성화
-  "KAIST","포스텍","GIST","DGIST","UNIST","한국에너지공대",
+  "KAIST","GIST","DGIST","UNIST","KENTEC",
   // 사관/특수
   "육사","해사","공사","국간사","경찰대"
 ];
@@ -772,8 +776,9 @@ contentEl.insertAdjacentHTML("beforeend", `
       `);
       plotCounter++;
 
-      // ✅ 서울+수도권 섹션
-const capitalRecords = records.filter(isCapitalRegion);
+     // ✅ 서울+수도권(지역/대학명) + 특목대까지 같이 포함
+const capitalRecords = records.filter(r => isCapitalRegion(r) || isSpecialPurposeUniv(r.univ));
+
 
 // “상위권 대학”만 보고 싶으면 여기서 한번 더 필터(없으면 수도권 전체로)
 const capitalTopTier = capitalRecords.filter(r => {
