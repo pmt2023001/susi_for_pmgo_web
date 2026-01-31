@@ -592,6 +592,23 @@ function normalizeUnivName(raw) {
   return s;
 }
 
+    function normalizeUnivName(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim();
+
+  s = s.replace(/\s*\(\s*/g, "(").replace(/\s*\)\s*/g, ")");
+  s = s.replace(/대학교/g, "").replace(/대학$/g, "");
+
+  // ✅ 특목대 표기 통일(한글/정식명/별칭 → 약칭)
+  s = s.replace(/(한국과학기술원|카이스트)/g, "KAIST");
+  s = s.replace(/(울산과학기술원|유니스트)/g, "UNIST");
+  s = s.replace(/(대구경북과학기술원|디지스트)/g, "DGIST");
+  s = s.replace(/(광주과학기술원|지스트)/g, "GIST");
+  s = s.replace(/(한국에너지공과대|한국에너지공과대학교|켄텍|KENTECH)/g, "KENTEC");
+
+  return s;
+}
+
 // 4) "고려대(세종)" 같은 캠퍼스 태그 추출
 function getCampusTag(univName) {
   const m = univName.match(/\(([^)]+)\)/);
