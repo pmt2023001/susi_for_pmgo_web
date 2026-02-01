@@ -7,8 +7,8 @@
 
   <!-- 외부 라이브러리 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-- <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-+ <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"><\/script>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
 
   <style>
     :root {
@@ -387,14 +387,25 @@ body.print-special #special-summary {
     <p>대교협상담프로그램 - 진학관리 - 수시진학관리의 엑셀파일을 업로드 하면 됩니다.</p>
   </header>
 
-  <section class="panel">
-    <h2>엑셀 업로드</h2>
-    <div class="field">
-      <input type="file" id="file-input" accept=".xlsx,.xls" />
- 
+ <section class="panel">
+  <h2>엑셀 업로드</h2>
+  <div class="field">
+    <input type="file" id="file-input" accept=".xlsx,.xls" />
+    <div class="actions">
+      <button class="primary" id="generate-btn">보고서 생성</button>
+
+      <!-- 출력 모드 3종 -->
+      <button id="print-overall-btn">현황 1부 출력</button>
+      <button id="print-capital-btn">서울+수도권 출력</button>
+      <button id="print-full-btn">전체 출력(PDF)</button>
+
+      <!-- 보고서 HTML 저장 -->
+      <button id="save-html-btn">보고서 HTML 저장</button>
     </div>
-    <div id="status"></div>
-  </section>
+  </div>
+  <div id="status"></div>
+</section>
+
 
   <section id="report" hidden></section>
 
@@ -543,6 +554,25 @@ function saveHtmlReport() {
     alert("먼저 보고서를 생성해주세요.");
     return;
   }
+function printWithMode(mode) {
+  if (reportEl.hidden) {
+    alert("먼저 보고서를 생성해주세요!");
+    return;
+  }
+
+  // 모드 초기화
+  document.body.classList.remove("print-overall", "print-capital", "print-special");
+
+  if (mode === "overall") document.body.classList.add("print-overall");
+  if (mode === "capital") document.body.classList.add("print-capital");
+  if (mode === "special") document.body.classList.add("print-special");
+  // mode === "full"이면 아무 클래스도 안 붙인 상태 = 전체 출력
+
+  window.print();
+
+  // 출력 후 원복
+  document.body.classList.remove("print-overall", "print-capital", "print-special");
+}
 
 
   const html = `
@@ -569,18 +599,8 @@ ${reportEl.innerHTML}
   a.click();
 
   URL.revokeObjectURL(url);
-});
-  
-  document.body.classList.remove("print-overall", "print-capital", "print-special");
-
-  if (mode === "overall") document.body.classList.add("print-overall");
-  if (mode === "capital") document.body.classList.add("print-capital");
-  if (mode === "special") document.body.classList.add("print-special");
-
-  window.print();
-
-  document.body.classList.remove("print-overall", "print-capital", "print-special");
 }
+  
 
 
 
