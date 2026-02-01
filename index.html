@@ -7,7 +7,8 @@
 
   <!-- 외부 라이브러리 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+- <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
++ <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"><\/script>
 
   <style>
     :root {
@@ -547,7 +548,8 @@ function printWithMode(mode) {
     alert("먼저 보고서를 생성해주세요!");
     return;
   }
-/* ✅ 여기부터 추가 (JS 하단, 함수 영역 끝) */
+document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
+// ✅ 보고서 HTML 저장(외부 공유용) — script 태그는 반드시 이스케이프!
 document.getElementById("save-html-btn").addEventListener("click", () => {
   if (reportEl.hidden) {
     alert("먼저 보고서를 생성해주세요.");
@@ -561,7 +563,7 @@ document.getElementById("save-html-btn").addEventListener("click", () => {
 <meta charset="UTF-8">
 <title>수시 입시 결과 보고서</title>
 ${document.querySelector("style").outerHTML}
-<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"><\/script>
 </head>
 <body>
 ${reportEl.innerHTML}
@@ -579,7 +581,6 @@ ${reportEl.innerHTML}
 
   URL.revokeObjectURL(url);
 });
-/* ✅ 여기까지 */
   
   document.body.classList.remove("print-overall", "print-capital", "print-special");
 
@@ -592,9 +593,7 @@ ${reportEl.innerHTML}
   document.body.classList.remove("print-overall", "print-capital", "print-special");
 }
 
-document.getElementById("print-overall-btn").addEventListener("click", () => printWithMode("overall"));
-document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
-document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
+
 
 // ===== (A) 대학명 정규화 / 캠퍼스 판정 / 지역 보정 =====
 
