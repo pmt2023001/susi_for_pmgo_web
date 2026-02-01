@@ -611,19 +611,6 @@ const SPECIAL_PURPOSE_UNIVS = [
 ];
 
 // 3) 문자열 정규화(공백/대학/대학교 등 흔한 흔들림 완화)
-function normalizeUnivName(raw) {
-  if (!raw) return "";
-  let s = String(raw).trim();
-
-  // 괄호 앞뒤 공백 정리
-  s = s.replace(/\s*\(\s*/g, "(").replace(/\s*\)\s*/g, ")");
-
-  // 흔한 접미 정리(원하면 더 추가 가능)
-  s = s.replace(/대학교/g, "").replace(/대학$/g, "");
-
-  return s;
-}
-
     function normalizeUnivName(raw) {
   if (!raw) return "";
   let s = String(raw).trim();
