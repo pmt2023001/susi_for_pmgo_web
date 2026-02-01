@@ -543,18 +543,16 @@ document.getElementById("print-full-btn").addEventListener("click", () => printW
     function unique(arr) {
       return Array.from(new Set(arr)).filter(Boolean).sort();
     }
-function printWithMode(mode) {
-  if (reportEl.hidden) {
-    alert("먼저 보고서를 생성해주세요!");
-    return;
-  }
-document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
-// ✅ 보고서 HTML 저장(외부 공유용) — script 태그는 반드시 이스케이프!
-document.getElementById("save-html-btn").addEventListener("click", () => {
+
+// (A) 버튼 이벤트는 전부 여기
+document.getElementById("save-html-btn").addEventListener("click", saveHtmlReport);
+
+function saveHtmlReport() {
   if (reportEl.hidden) {
     alert("먼저 보고서를 생성해주세요.");
     return;
   }
+
 
   const html = `
 <!DOCTYPE html>
