@@ -547,7 +547,40 @@ function printWithMode(mode) {
     alert("먼저 보고서를 생성해주세요!");
     return;
   }
+/* ✅ 여기부터 추가 (JS 하단, 함수 영역 끝) */
+document.getElementById("save-html-btn").addEventListener("click", () => {
+  if (reportEl.hidden) {
+    alert("먼저 보고서를 생성해주세요.");
+    return;
+  }
 
+  const html = `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>수시 입시 결과 보고서</title>
+${document.querySelector("style").outerHTML}
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+</head>
+<body>
+${reportEl.innerHTML}
+</body>
+</html>
+  `.trim();
+
+  const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "수시_입시결과_보고서.html";
+  a.click();
+
+  URL.revokeObjectURL(url);
+});
+/* ✅ 여기까지 */
+  
   document.body.classList.remove("print-overall", "print-capital", "print-special");
 
   if (mode === "overall") document.body.classList.add("print-overall");
