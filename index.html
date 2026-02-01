@@ -396,8 +396,6 @@ body.print-special #special-summary {
   <button id="print-overall-btn">🖨️ 현황 출력(1부)</button>
   <button id="print-capital-btn">🖨️ 서울+수도권 출력</button>
   <button id="print-full-btn">🖨️ 전체 출력</button>
-  <button id="save-html-btn">💾 보고서 HTML 저장</button>
-
 </div>
 
     </div>
@@ -433,6 +431,13 @@ body.print-special #special-summary {
 document.getElementById("print-overall-btn").addEventListener("click", () => printWithMode("overall"));
 document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
 document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
+
+  <button class="primary" id="generate-btn">보고서 생성</button>
+  <button id="print-overall-btn">🖨️ 현황 출력(1부)</button>
+  <button id="print-capital-btn">🖨️ 서울+수도권 출력</button>
+  <button id="print-full-btn">🖨️ 전체 출력</button>
+</div>
+
 
     function setStatus(msg, isError = false) {
       statusEl.textContent = msg;
@@ -547,40 +552,7 @@ function printWithMode(mode) {
     alert("먼저 보고서를 생성해주세요!");
     return;
   }
-/* ✅ 여기부터 추가 (JS 하단, 함수 영역 끝) */
-document.getElementById("save-html-btn").addEventListener("click", () => {
-  if (reportEl.hidden) {
-    alert("먼저 보고서를 생성해주세요.");
-    return;
-  }
 
-  const html = `
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>수시 입시 결과 보고서</title>
-${document.querySelector("style").outerHTML}
-<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-</head>
-<body>
-${reportEl.innerHTML}
-</body>
-</html>
-  `.trim();
-
-  const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "수시_입시결과_보고서.html";
-  a.click();
-
-  URL.revokeObjectURL(url);
-});
-/* ✅ 여기까지 */
-  
   document.body.classList.remove("print-overall", "print-capital", "print-special");
 
   if (mode === "overall") document.body.classList.add("print-overall");
@@ -623,23 +595,6 @@ function normalizeUnivName(raw) {
 
   // 흔한 접미 정리(원하면 더 추가 가능)
   s = s.replace(/대학교/g, "").replace(/대학$/g, "");
-
-  return s;
-}
-
-    function normalizeUnivName(raw) {
-  if (!raw) return "";
-  let s = String(raw).trim();
-
-  s = s.replace(/\s*\(\s*/g, "(").replace(/\s*\)\s*/g, ")");
-  s = s.replace(/대학교/g, "").replace(/대학$/g, "");
-
-  // ✅ 특목대 표기 통일(한글/정식명/별칭 → 약칭)
-  s = s.replace(/(한국과학기술원|카이스트)/g, "KAIST");
-  s = s.replace(/(울산과학기술원|유니스트)/g, "UNIST");
-  s = s.replace(/(대구경북과학기술원|디지스트)/g, "DGIST");
-  s = s.replace(/(광주과학기술원|지스트)/g, "GIST");
-  s = s.replace(/(한국에너지공과대|한국에너지공과대학교|켄텍|KENTECH)/g, "KENTEC");
 
   return s;
 }
