@@ -261,6 +261,34 @@
         break-before: auto !important;
       }
     }
+    /* ===== 인쇄 잘림 방지(추가) ===== */
+@media print {
+  /* 박스 단위로 쪼개지지 않게 */
+  .dept-container,
+  .dept-container > div,
+  .dept-container table,
+  .dept-container .plot-container,
+  .dept-container .plot-container > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* 표는 행 단위로만 쪼개지게(행이 반쪽나는 것 방지) */
+  table { page-break-inside: auto !important; }
+  tr, td, th {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Plotly/SVG가 잘리는 경우 완화 */
+  svg, .main-svg {
+    overflow: visible !important;
+  }
+
+  /* 너무 길면 페이지 밖으로 밀리는 경우가 있어서 여백 확보 */
+  .dept-container { padding-bottom: 12mm !important; }
+}
+
   </style>
 </head>
 
@@ -341,19 +369,16 @@
     /* =========================
    인쇄(PDF) 버튼 이벤트
 ========================= */
-document.getElementById("print-btn").addEventListener("click", () => {
-  if (reportEl.hidden) {
-    alert("먼저 보고서를 생성해주세요!");
-    return;
-  }
-  window.print();
-});
 
     // ✅ 3종 출력 버튼
     document.getElementById("print-overall-btn").addEventListener("click", () => printWithMode("overall"));
     document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
     document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
 
+    const exportBtn = document.getElementById("export-share-btn");
+exportBtn.addEventListener("click", exportShareJSON);
+
+    
     // 인쇄 후 클래스 복구
     window.addEventListener("afterprint", () => {
       document.body.classList.remove("print-overall","print-capital","print-full");
@@ -376,6 +401,71 @@ document.getElementById("print-btn").addEventListener("click", () => {
       window.print();
     }
 
+function exportShareJSON() {
+  if (!lastRecords || !lastRecords.length) {
+    alert("먼저 보고서를 생성해주세요!");
+    return;
+  }
+
+  // ✅ 원본/개인정보를 빼고 “공유용 요약”만 담기
+  const payload = buildSharePayload(lastRecords);
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `susi_report_share_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+// ✅ 공유용 JSON: “대학/전형/결과/등급 통계” 중심 (학생명/학번 등 제거)
+function buildSharePayload(records){
+  // 1) 전체 카운트
+  const total = records.length;
+
+  // 2) 수도권+특목대 합격(충원포함) 대학별 집계(현재 화면 표랑 동일 목적)
+  const picked = records.filter(r => isCapitalByRegion(r.region) || isSpecialUniv(r.univ));
+  const passPicked = picked.filter(r => r.result === "합격" || r.result === "충원합격");
+
+  const byUniv = {};
+  passPicked.forEach(r => {
+    const u = r.univ || "미상";
+    byUniv[u] = (byUniv[u] || 0) + 1;
+  });
+
+  const capital_special_pass_univ = Object.entries(byUniv)
+    .map(([univ, passCount]) => ({ univ, passCount }))
+    .sort((a,b) => b.passCount - a.passCount || a.univ.localeCompare(b.univ, "ko"));
+
+  // 3) 전형유형별 요약(전체)
+  const apptype = {};
+  records.forEach(r => {
+    const k = r.apptype || "미상";
+    if (!apptype[k]) apptype[k] = { total:0, pass:0, wait:0, fail:0 };
+    apptype[k].total += 1;
+    if (r.result === "합격") apptype[k].pass += 1;
+    else if (r.result === "충원합격") apptype[k].wait += 1;
+    else if (r.result === "불합격") apptype[k].fail += 1;
+  });
+
+  return {
+    meta: {
+      createdAt: new Date().toISOString(),
+      note: "공유용 요약 JSON(개인정보 제거). 원본 엑셀/개별 학생정보는 포함하지 않음."
+    },
+    totalRecords: total,
+    apptypeSummary: apptype,
+    capitalAndSpecialPassByUniversity: capital_special_pass_univ
+  };
+}
+
+    
     async function handleGenerate() {
       const file = fileInput.files[0];
       if (!file) {
