@@ -357,6 +357,7 @@
     const statusEl  = document.getElementById("status");
     const reportEl  = document.getElementById("report");
     const generateBtn = document.getElementById("generate-btn");
+    const WEBAPP_URL = "https://script.google.com/a/macros/ggh.goe.go.kr/s/AKfycbw8P5o17VRXe6idAmfNBeB7r407ebb6nVrYcAywlQkIWh6am5ukO2oM4ma1QYSzJ9ho/exec";
 
     let currentGradeType = "all_subj";
     let plotsData = {};
@@ -1671,6 +1672,26 @@ function exportShareJson() {
   };
 
   downloadJson(payload, "share.json");
+  try {
+  const result = await uploadShareToDrive(payload);
+  alert("Drive에 공유 파일 저장 완료\n" + result.meta.updatedAt);
+} catch (e) {
+  alert("공유 파일 업로드 실패: " + e.message);
+}
+
+}
+async function uploadShareToDrive(payload) {
+  const res = await fetch(WEBAPP_URL + "?action=save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const json = await res.json();
+  if (!json.ok) {
+    throw new Error(json.message || "업로드 실패");
+  }
+  return json;
 }
 
 function downloadJson(obj, fileName) {
