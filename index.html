@@ -474,13 +474,17 @@
       return Array.from(new Set(arr)).filter(Boolean).sort();
     }
 
-    function normalizeResult(v){
-      const s = safe(v);
-      if (s.includes("충원")) return "충원합격";
-      if (s.includes("합격")) return "합격";
-      if (s.includes("불합격")) return "불합격";
-      return s;
-    }
+  function normalizeResult(v){
+  const s = safe(v);
+
+  // ✅ 반드시 "불합격"을 먼저
+  if (s.includes("불합격")) return "불합격";
+  if (s.includes("충원")) return "충원합격";
+  if (s.includes("합격")) return "합격";
+
+  return s;
+}
+
 
     function maskName(name){
       const s = safe(name);
