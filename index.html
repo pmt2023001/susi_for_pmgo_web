@@ -337,6 +337,18 @@
 
     generateBtn.addEventListener("click", handleGenerate);
 
+
+    /* =========================
+   인쇄(PDF) 버튼 이벤트
+========================= */
+document.getElementById("print-btn").addEventListener("click", () => {
+  if (reportEl.hidden) {
+    alert("먼저 보고서를 생성해주세요!");
+    return;
+  }
+  window.print();
+});
+
     // ✅ 3종 출력 버튼
     document.getElementById("print-overall-btn").addEventListener("click", () => printWithMode("overall"));
     document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
