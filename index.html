@@ -482,6 +482,7 @@ function buildSharePayload(records){
         }
         lastRecords = records;
         renderFullReport(records);
+        enableJsonExport()
         setStatus(`총 ${records.length}건 로드 완료. 보고서가 생성되었습니다.`);
       } catch (e) {
         console.error(e);
@@ -1600,6 +1601,165 @@ function renderCapitalAndSpecPassTable(records, options = {}) {
         yaxis: { title: "인원(+합격 / -불합격)", zeroline: true, range: [-maxVal * 1.2, maxVal * 1.2] },
       }, { displayModeBar: false, responsive: true });
     }
+    // ===== 공유용 JSON 내보내기 =====
+let shareExportReady = false;
+
+function enableJsonExport() {
+  const btn = document.getElementById("json-btn");
+  if (!btn) return;
+  btn.disabled = false;
+  shareExportReady = true;
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "json-btn") {
+    exportShareJson();
+  }
+});
+
+function exportShareJson() {
+  if (!shareExportReady || !lastRecords || !lastRecords.length) {
+    alert("먼저 보고서를 생성해주세요!");
+    return;
+  }
+
+  // ✅ 여기서 lastRecords를 “개인정보 없는 요약”으로 바꿔서 내보냅니다.
+  // 수도권/특목대 합격인원(대학별)만 포함 (최소 공유 단위)
+  const { metroPassByUniv, spUnivPassByUniv } = buildPassTablesForShare(lastRecords);
+
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    tables: {
+      metroPassByUniv,
+      spUnivPassByUniv
+    }
+  };
+
+  downloadJson(payload, "share.json");
+}
+
+function downloadJson(obj, fileName) {
+  const text = JSON.stringify(obj, null, 2);
+  const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * ✅ “엑셀 region 최우선” 원칙을 존중:
+ * - 수도권 판정은 region 값이 있으면 region으로, 없으면 대학명 보정 규칙으로.
+ * - 특목대는 별도 집계(수도권 표에도 같이 나오게 하고 싶으면 합칠 수도 있음)
+ *
+ * 아래 구현은 “region 기반 + 보정된 대학명 기반”을 같이 씁니다.
+ */
+function buildPassTablesForShare(records) {
+  // 합격(충원 포함)만
+  const passRows = records.filter(r => r.result === "합격" || r.result === "충원합격");
+
+  // 1) 대학명 보정(사용자 룰 반영: () 첫글자만 등)
+  //    ※ 이 함수는 “출력/공유용”에서만 쓰라고 하셨으니 여기서만 적용
+  const normalizeUniv = (name) => {
+    let s = String(name || "").trim();
+    if (!s) return s;
+
+    // 사용자가 준 대표 치환
+    const map = new Map([
+      ["국립한국해양대학교(부산)", "한국해양대"],
+      ["한양대학교(ERICA)", "한양대(에)"],
+      ["광주여자대학교(광주)", "광주여대"],
+      ["중부대학교(고양) - 고양캠퍼스", "중부대"],
+      ["중부대학교(금산) - 충청캠퍼스", "중부대"],
+      ["동국대학교(WISE)", "동국대(W)"],
+      ["중앙대학교(다빈치)", "중앙대(다)"],
+      ["건국대학교(글로컬)", "건국대(글)"],
+      ["상명대학교(천안)", "상명대(천)"],
+      ["한국기술교육대학교(천안)", "한국기술교대"],
+      ["한국항공대학교(고양)", "한국항공대"],
+      ["홍익대학교(세종)", "홍익대(세)"],
+    ]);
+    if (map.has(s)) return map.get(s);
+
+    // “서울지역과 동일한 명칭으로 운영하는 지방대 → () 첫글자만”
+    // 예: 고려대학교(세종) -> 고려대(세)
+    //     중앙대학교(다빈치) 같은 케이스도 동일 처리 가능
+    // 1) 괄호형: (세종)
+    const m1 = s.match(/^(.+?)\((.+?)\)\s*$/);
+    if (m1) {
+      const base = m1[1].trim();
+      const campus = m1[2].trim();
+      const first = campus ? campus[0] : "";
+      return first ? `${shortenBase(base)}(${first})` : shortenBase(base);
+    }
+
+    // 2) 하이픈형: " - 세종캠퍼스" 같은 표현 (이미 map에 일부 있지만 일반화)
+    //    ex) "홍익대학교 - 세종캠퍼스" -> 홍익대(세)
+    const m2 = s.match(/^(.+?)\s*-\s*(.+?)캠퍼스\s*$/);
+    if (m2) {
+      const base = m2[1].trim();
+      const campus = m2[2].trim();
+      const first = campus ? campus[0] : "";
+      return first ? `${shortenBase(base)}(${first})` : shortenBase(base);
+    }
+
+    // 기본 축약: "대학교" 등 제거는 원하면 더 강화 가능
+    return shortenBase(s);
+  };
+
+  function shortenBase(base) {
+    // 너무 과격하게 줄이면 동명이교 위험 → “대학교”→“대” 정도만
+    return base.replace(/대학교$/,"대").replace(/국립$/,"");
+  }
+
+  // 2) 수도권 판정: region 우선
+  const isMetroByRegion = (region) => {
+    const r = String(region||"").trim();
+    if (!r) return null; // region 없으면 미판정
+    // 수도권: 서울/경기/인천
+    return (r.includes("서울") || r.includes("경기") || r.includes("인천"));
+  };
+
+  // 3) 특목대 목록 (포스텍 제외, 켄텍 포함)
+  //   - 실제 데이터 “대학명”이 어떤 문자열인지에 따라 normalize 후 비교합니다.
+  const SP_SET = new Set([
+    "KAIST", "카이스트", "UNIST", "유니스트", "DGIST", "디지스트", "GIST", "지스트",
+    "KENTECH", "켄텍", "한국에너지공대", "한국에너지공과대학교"
+  ].map(x=>normalizeUniv(x)));
+
+  // 4) 집계 함수
+  const countByUniv = (rows) => {
+    const m = new Map();
+    rows.forEach(r=>{
+      const u = normalizeUniv(r.univ);
+      if (!u) return;
+      m.set(u, (m.get(u)||0) + 1);
+    });
+    return Array.from(m.entries())
+      .map(([univ, pass])=>({univ, pass}))
+      .sort((a,b)=> b.pass - a.pass || a.univ.localeCompare(b.univ, "ko"));
+  };
+
+  // (A) 특목대 (어디 지역이든)
+  const spRows = passRows.filter(r => SP_SET.has(normalizeUniv(r.univ)));
+
+  // (B) 수도권: region 있으면 region으로, 없으면 “보정된 대학명”으로는 판정하지 않고 제외(원칙: region 최우선)
+  const metroRows = passRows.filter(r => {
+    const metro = isMetroByRegion(r.region);
+    if (metro === null) return false; // region 없으면 수도권 표에서는 제외(원칙)
+    return metro;
+  });
+
+  return {
+    metroPassByUniv: countByUniv(metroRows),
+    spUnivPassByUniv: countByUniv(spRows),
+  };
+}
+
   </script>
 </body>
 </html>
