@@ -425,12 +425,42 @@ function exportShareJSON() {
 }
 
 // ✅ 공유용 JSON: “대학/전형/결과/등급 통계” 중심 (학생명/학번 등 제거)
-function buildSharePayload(records){
-  // 1) 전체 카운트
-  const total = records.length;
 
-  // 2) 수도권+특목대 합격(충원포함) 대학별 집계(현재 화면 표랑 동일 목적)
-  const picked = records.filter(r => isCapitalByRegion(r.region) || isSpecialUniv(r.univ));
+    function buildSharePayload(records){
+  // ✅ 익명화 records 만들기: 이름 제거 + 상담 식별자는 반-번호만
+  const safeRecords = records.map(r => {
+    const classNo = (r.class_no ?? "").toString().trim();
+    const studentNo = (r.student_no ?? "").toString().trim();
+
+    return {
+      // 식별(표시)용: "반-번호"만
+      sid: `${classNo}-${studentNo}`,
+
+      // 분석/필터에 필요한 최소 필드만 유지
+      grade: r.grade ?? "",
+      class_no: classNo,
+      student_no: studentNo,
+
+      region: r.region ?? "",
+      univ: r.univ ?? "",
+      dept: r.dept ?? "",
+
+      apptype: r.apptype ?? "",
+      subtype: r.subtype ?? "",
+
+      result: r.result ?? "",
+      all_subj_grade: r.all_subj_grade ?? "",
+      conv_grade: r.conv_grade ?? "",
+
+      // hover에 필요하면 유지(개인정보 아닌 범위에서만)
+      track: r.track ?? ""
+    };
+  });
+
+  // 기존 요약 통계도 그대로 유지
+  const total = safeRecords.length;
+
+  const picked = safeRecords.filter(r => isCapitalByRegion(r.region) || isSpecialUniv(r.univ));
   const passPicked = picked.filter(r => r.result === "합격" || r.result === "충원합격");
 
   const byUniv = {};
@@ -443,9 +473,8 @@ function buildSharePayload(records){
     .map(([univ, passCount]) => ({ univ, passCount }))
     .sort((a,b) => b.passCount - a.passCount || a.univ.localeCompare(b.univ, "ko"));
 
-  // 3) 전형유형별 요약(전체)
   const apptype = {};
-  records.forEach(r => {
+  safeRecords.forEach(r => {
     const k = r.apptype || "미상";
     if (!apptype[k]) apptype[k] = { total:0, pass:0, wait:0, fail:0 };
     apptype[k].total += 1;
@@ -457,13 +486,19 @@ function buildSharePayload(records){
   return {
     meta: {
       createdAt: new Date().toISOString(),
-      note: "공유용 요약 JSON(개인정보 제거). 원본 엑셀/개별 학생정보는 포함하지 않음."
+      note: "공유용 JSON: 학생 이름 제거, 상담 화면 표시는 반-번호(sid)만 사용"
     },
+
+    // ✅ 핵심: viewer가 렌더할 원본(익명화) records
+    records: safeRecords,
+
+    // 참고용 요약
     totalRecords: total,
     apptypeSummary: apptype,
     capitalAndSpecialPassByUniversity: capital_special_pass_univ
   };
 }
+
 
     
     async function handleGenerate() {
