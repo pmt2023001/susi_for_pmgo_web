@@ -402,7 +402,7 @@ exportBtn.addEventListener("click", exportShareJSON);
       window.print();
     }
 
-async exportShareJSON() {
+async function exportShareJSON() {
   if (!lastRecords || !lastRecords.length) {
     alert("먼저 보고서를 생성해주세요!");
     return;
