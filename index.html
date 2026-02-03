@@ -559,6 +559,13 @@ header.forEach((name, i) => {
 
             // 기본: result=R(17), all_subj=AG(32), conv=AH(33)
             // 대안: result=V(21), all_subj=R(17), conv=T(19)
+// ✅ 2026-02-03부터 '(5등급) 일반등급' 열이 추가되어 뒤 열들이 +1 밀림
+const has5GradeCol = (() => {
+  const s1 = sheet["S1"] ? String(sheet["S1"].v || "").trim() : "";
+  // 새 파일은 S1에 '(5등급)' 그룹헤더가 들어있음
+  return s1.includes("(5등급)");
+})();
+const OFFSET = has5GradeCol ? 1 : 0;
 
            // ✅ 원본(2026년2월3일) 기준 COL
 const COL = {
@@ -568,9 +575,9 @@ const COL = {
   subtype: 10, // K 세부유형
   dept: 12,    // M 모집단위
 
-  result: 22,  // W 최종단계(합/불)
+  result: 21 + OFFSET,  // W 최종단계(합/불)
   all: 17,     // R (9등급)일반등급
-  conv: 20,    // U 내등급(환산)
+  conv: 19 + OFFSET,    // U 내등급(환산)
 };
 
 
