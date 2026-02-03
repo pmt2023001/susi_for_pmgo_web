@@ -2,91 +2,322 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title><?= appTitle ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>풍무고등학교 수시 입시 결과 통계프로그램</title>
 
-  <!-- Plotly (공유뷰어에서도 hover 필요) -->
+  <!-- 외부 라이브러리 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 
   <style>
-    body { margin:0; font-family: system-ui, sans-serif; background:#f6f4ef; color:#2f3c32; }
-    .wrap { max-width: 1200px; margin: 18px auto; padding: 0 12px; }
-    .card { background:#fff; border:1px solid #d9d2c3; border-radius:14px; padding:16px; box-shadow:0 10px 28px rgba(47,60,50,0.12); }
-    .muted { color:#6a7065; font-size:13px; }
-    .btn { cursor:pointer; border:1px solid #d9d2c3; background:#eef0eb; padding:10px 14px; border-radius:10px; font-weight:700; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    :root {
+      --bg: #f6f4ef;
+      --card: #ffffff;
+      --border: #d9d2c3;
+      --primary: #6b8f71;
+      --primary-dark: #58765e;
+      --accent: #d07a5c;
+      --text: #2f3c32;
+      --muted: #6a7065;
+      --shadow: 0 10px 28px rgba(47,60,50,0.12);
+      --stickyTop: 190px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ✅ 표/빈데이터 기본 스타일 */
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .stats-table th, .stats-table td {
+      border: 1px solid #e4ddcf;
+      padding: 7px;
+      text-align: center;
+    }
+    .stats-table thead th {
+      background: #f1ede5;
+      font-weight: 800;
+    }
+    .empty {
+      padding: 18px;
+      border: 1px dashed #d9d2c3;
+      border-radius: 12px;
+      color: var(--muted);
+      text-align: center;
+      background: #fff;
+    }
+
+    /* ===== 상단 ===== */
+    .hero {
+      padding: 28px 20px 14px;
+      text-align: center;
+    }
+
+    .panel {
+      max-width: 1160px;
+      margin: 0 auto 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ✅ 업로드 줄 정렬(한 줄 유지) */
+    .panel .field {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+    .panel .field #file-input{
+      flex: 1 1 auto;
+      min-width: 260px;
+      max-width: 520px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: nowrap;
+      flex: 0 0 auto;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #eef0eb;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    button.accent {
+      background: var(--accent);
+      color: #fff;
+      border-color: #c56f55;
+    }
+
+    /* ✅ 화면 좁을 때만 줄바꿈 */
+    @media (max-width: 700px){
+      .panel .field { flex-wrap: wrap; align-items: stretch; }
+      .panel .field #file-input { max-width: 100%; }
+      .actions { width: 100%; flex-wrap: wrap; }
+    }
+
+    /* ===== 고정 헤더 ===== */
+    .fixed-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: transparent;
+      border-bottom: none;
+      box-shadow: none;
+      padding: 10px 0;
+    }
+    .fixed-header::after{
+      content:"";
+      display:block;
+      height: 8px;
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      background: rgba(255,255,255,0.96);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .site-title{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .university-title{
+      margin: 4px 0 2px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .grade-toggle-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ===== 레이아웃 ===== */
+    .layout {
+      max-width: 1200px;
+      margin: 18px auto 32px;
+      display: flex;
+      gap: 16px;
+      padding: 0 12px;
+      align-items: flex-start;
+    }
+
+    .toc-container {
+      flex: 0 0 220px;
+      position: sticky;
+      top: var(--stickyTop);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 14px 14px;
+      box-shadow: var(--shadow);
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .main-content { flex: 1; padding: 0; }
+
+    .dept-container {
+      margin-bottom: 28px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .dept-header {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 8px;
+    }
+
+    .print-grade-line {
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    #content-area > .dept-container:first-child{
+      margin-top: 10px;
+    }
+
+    /* ===== 인쇄 ===== */
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body { background: #fff !important; }
+
+      .hero, .panel, .fixed-header, .toc-container {
+        display: none !important;
+      }
+
+      .layout {
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .dept-container {
+        page-break-before: always;
+        break-before: page;
+        box-shadow: none;
+        border: none;
+      }
+
+      /* ✅ 첫 블록은 강제 페이지 브레이크 제거 */
+      #overall-summary {
+        page-break-before: auto !important;
+        break-before: auto !important;
+      }
+
+      .plot-container { height: 320px !important; }
+
+      /* ===== 출력 모드 분기 ===== */
+      body.print-overall #report .dept-container:not(#overall-summary) {
+        display: none !important;
+      }
+      body.print-capital #report .dept-container:not(#capital-summary) {
+        display: none !important;
+      }
+      body.print-full #report { /* 전체 출력 */ }
+
+      body.print-overall #overall-summary,
+      body.print-capital #capital-summary {
+        page-break-before: auto !important;
+        break-before: auto !important;
+      }
+    }
+    /* ===== 인쇄 잘림 방지(추가) ===== */
+@media print {
+  /* 박스 단위로 쪼개지지 않게 */
+  .dept-container,
+  .dept-container > div,
+  .dept-container table,
+  .dept-container .plot-container,
+  .dept-container .plot-container > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* 표는 행 단위로만 쪼개지게(행이 반쪽나는 것 방지) */
+  table { page-break-inside: auto !important; }
+  tr, td, th {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Plotly/SVG가 잘리는 경우 완화 */
+  svg, .main-svg {
+    overflow: visible !important;
+  }
+
+  /* 너무 길면 페이지 밖으로 밀리는 경우가 있어서 여백 확보 */
+  .dept-container { padding-bottom: 12mm !important; }
+}
+
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h2 style="margin:0 0 6px;"><?= appTitle ?></h2>
-      <div class="row">
-        <button class="btn" id="reload">새로고침</button>
-        <div class="muted" id="meta"></div>
+  <header class="hero">
+    <h1>수시 입시 결과 통계 프로그램 [풍무고등학교]</h1>
+    <p>대교협상담프로그램 - 진학관리 - 수시진학관리의 엑셀파일을 업로드 하면 됩니다.</p>
+  </header>
+
+  <section class="panel">
+    <h2>엑셀 업로드</h2>
+    <div class="field">
+      <input type="file" id="file-input" accept=".xlsx,.xls" />
+      <div class="actions">
+        <button class="primary" id="generate-btn">보고서 생성</button>
+        <button class="accent" id="print-overall-btn">현황 1부(PDF)</button>
+        <button class="accent" id="print-capital-btn">서울+수도권+특목대(PDF)</button>
+        <button id="print-full-btn">전체 인쇄(PDF)</button>
+        <button id="export-share-btn">📦 공유용 JSON 저장</button>
+
       </div>
-      <div class="muted" id="status" style="margin-top:8px;"></div>
     </div>
+    <div id="status"></div>
+  </section>
 
-    <div style="height:12px;"></div>
-
-    <div class="card" id="app">
-      <!-- 여기 아래에 “보고서 화면과 동일한 렌더”를 붙일 예정 -->
-      <div class="muted">share.json을 불러오는 중...</div>
-    </div>
-  </div>
+  <section id="report" hidden></section>
 
   <script>
-    let reportEl = null;
-
-   let reportEl = null;
-
-async function fetchShare() {
-  return new Promise((resolve) => {
-    google.script.run.withSuccessHandler(resolve).getShareData();
-  });
-}
-
-document.getElementById("reload").addEventListener("click", load);
-
-async function load() {
-  const res = await fetchShare();
-
-  const status = document.getElementById("status");
-  const meta   = document.getElementById("meta");
-  const app    = document.getElementById("app");
-
-  // 실패 처리
-  if (!res || !res.ok) {
-    const msg = res?.message || "응답이 없습니다.";
-    status.textContent = msg;
-    app.innerHTML = `<div class="muted">${msg}</div>`;
-    return;
-  }
-
-  // 상태 표시
-  meta.textContent   = `파일: ${res?.meta?.fileName || "share.json"} · 업데이트: ${res?.meta?.updatedAt || ""}`;
-  status.textContent = "데이터 로드 완료";
-
-  // records는 '생성'이 아니라 '읽기'
-  const records = Array.isArray(res?.data?.records) ? res.data.records : [];
-
-  if (!records.length) {
-    app.innerHTML = `<div class="muted">records가 비어 있습니다. share.json의 records 배열을 확인해 주세요.</div>`;
-    return;
-  }
-
-  // report 컨테이너 생성 + 렌더
-  app.innerHTML = `<section id="report"></section>`;
-  reportEl = document.getElementById("report");
-  renderFullReport(records);
-}
-
-// 최초 1회 로드
-load();
-
-
-      const RESULT_ORDER = ["합격", "충원합격", "불합격"];
+    const RESULT_ORDER = ["합격", "충원합격", "불합격"];
     const COLOR_MAP = {
       "합격":   { border: "#5f8669", fill: "rgba(95, 134, 105, 0.30)" },
       "충원합격": { border: "#7cab7c", fill: "rgba(124, 171, 124, 0.28)" },
@@ -122,10 +353,32 @@ load();
       ["홍익대학교(세종)", "홍익대(세)"],
     ]);
 
+    const fileInput = document.getElementById("file-input");
+    const statusEl  = document.getElementById("status");
+    const reportEl  = document.getElementById("report");
+    const generateBtn = document.getElementById("generate-btn");
+
+    let currentGradeType = "all_subj";
+    let plotsData = {};
+    let plotInitialized = {};
+    let lastRecords = null;
+
+    generateBtn.addEventListener("click", handleGenerate);
 
 
+    /* =========================
+   인쇄(PDF) 버튼 이벤트
+========================= */
 
-       
+    // ✅ 3종 출력 버튼
+    document.getElementById("print-overall-btn").addEventListener("click", () => printWithMode("overall"));
+    document.getElementById("print-capital-btn").addEventListener("click", () => printWithMode("capital"));
+    document.getElementById("print-full-btn").addEventListener("click", () => printWithMode("full"));
+
+    const exportBtn = document.getElementById("export-share-btn");
+exportBtn.addEventListener("click", exportShareJSON);
+
+    
     // 인쇄 후 클래스 복구
     window.addEventListener("afterprint", () => {
       document.body.classList.remove("print-overall","print-capital","print-full");
@@ -228,6 +481,7 @@ function buildSharePayload(records){
           return;
         }
         lastRecords = records;
+        renderFullReport(records);
         enableJsonExport()
         setStatus(`총 ${records.length}건 로드 완료. 보고서가 생성되었습니다.`);
       } catch (e) {
