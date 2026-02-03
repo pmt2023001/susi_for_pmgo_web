@@ -530,96 +530,72 @@ function exportShareJSON() {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
-/* =========================================
-   [수정됨] 엑셀 데이터 처리 로직 시작
-   ========================================= */
-const workbook = XLSX.read(data, { type: 'binary' });
-const sheetName = workbook.SheetNames[0];
-const sheet = workbook.Sheets[sheetName];
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-// 1. 헤더가 어디 있는지 모르므로, 일단 배열의 배열(Array of Arrays)로 읽습니다.
-const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            // 첫 2행 스킵
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 2 });
 
-// 2. '이름'이나 '대학명'이 포함된 행을 진짜 헤더(제목줄)로 찾습니다.
-let headerIndex = -1;
-for (let i = 0; i < Math.min(rawData.length, 10); i++) { // 상위 10줄 내 탐색
-    const rowStr = JSON.stringify(rawData[i]);
-    if (rowStr.includes("이름") && rowStr.includes("대학명")) {
-        headerIndex = i;
-        break;
-    }
-}
+            // 형식 판별
+            const isAltFormat = (() => {
+              const cell = sheet["V1"];
+              const val = cell ? String(cell.v || "").trim() : "";
+              return val.includes("최종단계");
+            })();
 
-if (headerIndex === -1) {
-    alert("엑셀 파일에서 '이름'과 '대학명' 열을 찾을 수 없습니다. 양식을 확인해주세요.");
-    return;
-}
+            // 기본: result=R(17), all_subj=AG(32), conv=AH(33)
+            // 대안: result=V(21), all_subj=R(17), conv=T(19)
+            const COL = {
+              region: 5,  // F
+              univ: 6,    // G
+              apptype: 8, // I
+              subtype: 10,// K
+              dept: 12,   // M
+              result: isAltFormat ? 21 : 17,
+              all:    isAltFormat ? 17 : 32,
+              conv:   isAltFormat ? 19 : 33,
+            };
 
-const headers = rawData[headerIndex]; // 찾은 헤더
-const bodyRows = rawData.slice(headerIndex + 1); // 헤더 아랫줄부터 데이터
+            const records = [];
+            rows.forEach((row) => {
+              const rawName = safe(row[3]);
+              const masked = maskName(rawName);
 
-// 3. 데이터를 객체로 변환하고 정제(Cleaning)합니다.
-const processedData = bodyRows.map(row => {
-    let obj = {};
-    headers.forEach((h, i) => {
-        if (h) {
-             // 특수문자나 공백이 있을 수 있으므로 trim() 처리
-            obj[String(h).trim()] = row[i];
-        }
-    });
-    return obj;
-})
-.filter(item => {
-    // [중요] 필터링: 이름이 없거나, 이름 자리에 '100' 같은 숫자가 적힌 설정 행(Metadata) 제거
-    const name = item['이름'];
-    if (!name) return false; 
-    if (String(name).includes('100') || String(name) === '이름') return false; 
-    return true;
-})
-.map(item => {
-    // 4. 컬럼 이름 매핑 (구버전/신버전 모두 대응)
-    
-    // 내신 등급: '전교과'가 없으면 '(9등급)'을 가져오고, 그것도 없으면 '내등급(환산)'을 시도
-    let gradeRaw = item['전교과'] || item['(9등급)'] || item['내등급(환산)'];
-    let grade = parseFloat(gradeRaw);
-    if (isNaN(grade)) grade = 9.0; // 등급 없으면 9.0 처리
+              const rawUniv = safe(row[COL.univ]);
+              const region  = safe(row[COL.region]);
 
-    // 대학명
-    let univName = item['대학명'] || "";
+              const rec = {
+                grade: safe(row[0]),
+                class_no: safe(row[1]),
+                student_no: safe(row[2]),
+                student_name: masked,          // ✅ 기본 마스킹 적용
+                student_name_raw: rawName,     // 내부 참고(표시X)
+                region,
+                univ_raw: rawUniv,
+                univ: normalizeUniversityName(rawUniv, region), // ✅ 출력용 보정명
+                apptype: safe(row[COL.apptype]),
+                subtype: safe(row[COL.subtype]),
+                dept: safe(row[COL.dept]),
+                result: normalizeResult(safe(row[COL.result])),
+                all_subj_grade: parseGrade(row[COL.all]),
+                conv_grade: parseGrade(row[COL.conv]),
+              };
 
-    // 지역
-    let region = item['지역'] || "";
-    
-    // 전형 유형
-    let type = item['전형유형'] || "";
+              // 필수값 체크
+              if (!rec.result || !rec.univ || !rec.dept || !rec.subtype || !rec.apptype) return;
+              if (rec.all_subj_grade === null && rec.conv_grade === null) return;
 
-    // 합불 결과 (최종단계 우선, 없으면 1단계 확인)
-    let result = item['최종단계'] || item['1단계'] || "불합격";
+              records.push(rec);
+            });
 
-    // 학과
-    let dept = item['모집단위'] || "";
-
-    return {
-        grade: grade,
-        univ: univName,
-        region: region,
-        type: type,
-        result: result,
-        dept: dept,
-        name: item['이름']
-    };
-});
-
-// [확인용] 데이터가 잘 들어왔는지 콘솔 출력
-console.log("처리된 데이터 개수:", processedData.length);
-if(processedData.length > 0) {
-    console.log("첫 번째 데이터 샘플:", processedData[0]);
-}
-
-// --> 이후 이 'processedData' 변수를 사용하여 차트를 그리는 함수(renderCharts 등)로 넘겨주세요.
-/* =========================================
-   [수정됨] 엑셀 데이터 처리 로직 끝
-   ========================================= */
+            resolve(records);
+          } catch (err) {
+            reject(err);
+          }
+        };
 
         reader.onerror = (err) => reject(err);
         reader.readAsArrayBuffer(file);
