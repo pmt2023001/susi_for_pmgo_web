@@ -261,31 +261,35 @@
         break-before: auto !important;
       }
     }
-    /* ===== 인쇄 잘림 방지(추가) ===== */
+/* ===== 인쇄 잘림 방지(수정) ===== */
 @media print {
-  /* 박스 단위로 쪼개지지 않게 */
+  /* 카드/섹션 단위는 쪼개지지 않게 */
   .dept-container,
   .dept-container > div,
-  .dept-container table,
-  .dept-container .plot-container,
-  .dept-container .plot-container > div {
+  .dept-container .plot-container {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* 표는 행 단위로만 쪼개지게(행이 반쪽나는 것 방지) */
-  table { page-break-inside: auto !important; }
-  tr, td, th {
+  /* 표는 '전체는 넘어가되', 행은 반쪽나지 않게 */
+  .dept-container table {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  .dept-container thead { display: table-header-group; }
+  .dept-container tfoot { display: table-footer-group; }
+
+  .dept-container tr,
+  .dept-container td,
+  .dept-container th {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Plotly/SVG가 잘리는 경우 완화 */
-  svg, .main-svg {
-    overflow: visible !important;
-  }
+  /* Plotly/SVG 잘림 완화(유지) */
+  svg, .main-svg { overflow: visible !important; }
 
-  /* 너무 길면 페이지 밖으로 밀리는 경우가 있어서 여백 확보 */
+  /* 여백(유지) */
   .dept-container { padding-bottom: 12mm !important; }
 }
 
