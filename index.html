@@ -546,11 +546,6 @@ function exportShareJSON() {
               return val.includes("최종단계");
             })();
 
-            // ✅ [추가] 파일 포맷 차이(열 1개 추가) 자동 보정
-// 2026-02-03 파일은 열이 1개 늘어 뒤쪽 인덱스가 +1 밀림
-const colCount = Array.isArray(rows) && rows.length ? rows[0].length : 0;
-const SHIFT = (colCount >= 82) ? 1 : 0;
-
             // 기본: result=R(17), all_subj=AG(32), conv=AH(33)
             // 대안: result=V(21), all_subj=R(17), conv=T(19)
             const COL = {
@@ -559,9 +554,9 @@ const SHIFT = (colCount >= 82) ? 1 : 0;
               apptype: 8, // I
               subtype: 10,// K
               dept: 12,   // M
-              result: isAltFormat ? 21 : 17 + SHIFT,
-              all:    isAltFormat ? 17 : 32 + SHIFT,
-              conv:   isAltFormat ? 19 : 33 + SHIFT,
+              result: isAltFormat ? 21 : 17,
+              all:    isAltFormat ? 17 : 32,
+              conv:   isAltFormat ? 19 : 33,
             };
 
             const records = [];
@@ -883,7 +878,7 @@ const SHIFT = (colCount >= 82) ? 1 : 0;
         html += `</div>`;
         contentEl.insertAdjacentHTML("beforeend", html);
       });
-//여기까지??
+
       bindGradeToggle();
       initPlots();
       buildTOC();
@@ -1731,18 +1726,18 @@ function buildPassTablesForShare(records) {
 
     // 사용자가 준 대표 치환
     const map = new Map([
-      ["국립한국해양대학교(부산)", "한국해양대학교"],
-      ["한양대학교(ERICA)", "한양대학교(에)"],
-      ["광주여자대학교(광주)", "광주여자대학교"],
-      ["중부대학교(고양) - 고양캠퍼스", "중부대학교(고)"],
-      ["중부대학교(금산) - 충청캠퍼스", "중부대학교(금)"],
-      ["동국대학교(WISE)", "동국대학교(W)"],
-      ["중앙대학교(다빈치)", "중앙대학교(다)"],
-      ["건국대학교(글로컬)", "건국대학교(글)"],
-      ["상명대학교(천안)", "상명대학교(천)"],
-      ["한국기술교육대학교(천안)", "기술교육대학교"],
-      ["한국항공대학교(고양)", "한국항공대학교"],
-      ["홍익대학교(세종)", "홍익대학교(세)"],
+      ["국립한국해양대학교(부산)", "한국해양대"],
+      ["한양대학교(ERICA)", "한양대(에)"],
+      ["광주여자대학교(광주)", "광주여대"],
+      ["중부대학교(고양) - 고양캠퍼스", "중부대"],
+      ["중부대학교(금산) - 충청캠퍼스", "중부대"],
+      ["동국대학교(WISE)", "동국대(W)"],
+      ["중앙대학교(다빈치)", "중앙대(다)"],
+      ["건국대학교(글로컬)", "건국대(글)"],
+      ["상명대학교(천안)", "상명대(천)"],
+      ["한국기술교육대학교(천안)", "한국기술교대"],
+      ["한국항공대학교(고양)", "한국항공대"],
+      ["홍익대학교(세종)", "홍익대(세)"],
     ]);
     if (map.has(s)) return map.get(s);
 
