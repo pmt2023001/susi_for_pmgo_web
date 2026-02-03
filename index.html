@@ -402,7 +402,7 @@ exportBtn.addEventListener("click", exportShareJSON);
       window.print();
     }
 
-async function exportShareJSON() {
+function exportShareJSON() {
   if (!lastRecords || !lastRecords.length) {
     alert("먼저 보고서를 생성해주세요!");
     return;
@@ -1653,7 +1653,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-function exportShareJson() {
+async function exportShareJson() {
   if (!shareExportReady || !lastRecords || !lastRecords.length) {
     alert("먼저 보고서를 생성해주세요!");
     return;
