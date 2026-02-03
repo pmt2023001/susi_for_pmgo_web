@@ -560,46 +560,47 @@ header.forEach((name, i) => {
             // 기본: result=R(17), all_subj=AG(32), conv=AH(33)
             // 대안: result=V(21), all_subj=R(17), conv=T(19)
 
-            // === 헤더명 기반 컬럼 정의 ===
-          const COL = {
-            region: "지역",
-            univ: "대학명",
-            apptype: "전형유형",
-            subtype: "전형명",
-            dept: "모집단위",
-            result: isAltFormat ? "최종단계" : "결과",
-            all: isAltFormat ? "전교과100등급" : "전교과100등급",
-            conv: isAltFormat ? "환산등급" : "환산등급",
+           // ✅ 원본(2026년2월3일) 기준 COL
+const COL = {
+  region: 5,   // F 지역
+  univ: 6,     // G 대학명
+  apptype: 8,  // I 전형유형
+  subtype: 10, // K 세부유형
+  dept: 12,    // M 모집단위
+
+  result: 22,  // W 최종단계(합/불)
+  all: 17,     // R (9등급)일반등급
+  conv: 20,    // U 내등급(환산)
 };
+
 
             const records = [];
             rows.forEach((row) => {
               const rawName = safe(row[3]);
-              const masked = maskName(rawName);
+const masked = maskName(rawName);
 
-              const rawUniv = safe(row[idx[COL.univ]]);
-              const region  = safe(row[idx[COL.region]]);
+const rawUniv = safe(row[COL.univ]);
+const region  = safe(row[COL.region]);
 
+const rec = {
+  grade: safe(row[0]),
+  class_no: safe(row[1]),
+  student_no: safe(row[2]),
+  student_name: masked,
+  student_name_raw: rawName,
 
-              const rec = {
-                grade: safe(row[0]),
-                class_no: safe(row[1]),
-                student_no: safe(row[2]),
-                student_name: masked,          
-                // ✅ 기본 마스킹 적용
-                student_name_raw: rawName,     
-                // 내부 참고(표시X)
-                region,
-                univ_raw: rawUniv,
-                univ: normalizeUniversityName(rawUniv, region), 
-                // ✅ 출력용 보정명
-                apptype: safe(row[idx[COL.apptype]]),
-                subtype: safe(row[idx[COL.subtype]]),
-                dept: safe(row[idx[COL.dept]]),
-                result: normalizeResult(safe(row[idx[COL.result]])),
-                all_subj_grade: parseGrade(row[idx[COL.all]]),
-                conv_grade: parseGrade(row[idx[COL.conv]]),
-              };
+  region,
+  univ_raw: rawUniv,
+  univ: normalizeUniversityName(rawUniv, region),
+
+  apptype: safe(row[COL.apptype]),
+  subtype: safe(row[COL.subtype]),
+  dept: safe(row[COL.dept]),
+
+  result: normalizeResult(safe(row[COL.result])),
+  all_subj_grade: parseGrade(row[COL.all]),
+  conv_grade: parseGrade(row[COL.conv]),
+};
 
               // 필수값 체크
               if (!rec.result || !rec.univ || !rec.dept || !rec.subtype || !rec.apptype) return;
