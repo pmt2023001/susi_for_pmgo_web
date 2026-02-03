@@ -543,6 +543,13 @@ function exportShareJSON() {
             // 첫 2행 스킵
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 2 });
 
+            // === 헤더명 → 인덱스 매핑 ===
+const header = (rows[0] || []).map(h => String(h || "").trim());
+const idx = {};
+header.forEach((name, i) => {
+  if (name) idx[name] = i;
+});
+
             // 형식 판별
             const isAltFormat = (() => {
               const cell = sheet["V1"];
@@ -552,40 +559,46 @@ function exportShareJSON() {
 
             // 기본: result=R(17), all_subj=AG(32), conv=AH(33)
             // 대안: result=V(21), all_subj=R(17), conv=T(19)
-            const COL = {
-              region: 5,  // F
-              univ: 6,    // G
-              apptype: 8, // I
-              subtype: 10,// K
-              dept: 12,   // M
-              result: isAltFormat ? 21 : 17,
-              all:    isAltFormat ? 17 : 32,
-              conv:   isAltFormat ? 19 : 33,
-            };
+
+            // === 헤더명 기반 컬럼 정의 ===
+          const COL = {
+            region: "지역",
+            univ: "대학명",
+            apptype: "전형유형",
+            subtype: "전형명",
+            dept: "모집단위",
+            result: isAltFormat ? "최종단계" : "결과",
+            all: isAltFormat ? "전교과100등급" : "전교과100등급",
+            conv: isAltFormat ? "환산등급" : "환산등급",
+};
 
             const records = [];
             rows.forEach((row) => {
               const rawName = safe(row[3]);
               const masked = maskName(rawName);
 
-              const rawUniv = safe(row[COL.univ]);
-              const region  = safe(row[COL.region]);
+              const rawUniv = safe(row[idx[COL.univ]]);
+              const region  = safe(row[idx[COL.region]]);
+
 
               const rec = {
                 grade: safe(row[0]),
                 class_no: safe(row[1]),
                 student_no: safe(row[2]),
-                student_name: masked,          // ✅ 기본 마스킹 적용
-                student_name_raw: rawName,     // 내부 참고(표시X)
+                student_name: masked,          
+                // ✅ 기본 마스킹 적용
+                student_name_raw: rawName,     
+                // 내부 참고(표시X)
                 region,
                 univ_raw: rawUniv,
-                univ: normalizeUniversityName(rawUniv, region), // ✅ 출력용 보정명
-                apptype: safe(row[COL.apptype]),
-                subtype: safe(row[COL.subtype]),
-                dept: safe(row[COL.dept]),
-                result: normalizeResult(safe(row[COL.result])),
-                all_subj_grade: parseGrade(row[COL.all]),
-                conv_grade: parseGrade(row[COL.conv]),
+                univ: normalizeUniversityName(rawUniv, region), 
+                // ✅ 출력용 보정명
+                apptype: safe(row[idx[COL.apptype]]),
+                subtype: safe(row[idx[COL.subtype]]),
+                dept: safe(row[idx[COL.dept]]),
+                result: normalizeResult(safe(row[idx[COL.result]])),
+                all_subj_grade: parseGrade(row[idx[COL.all]]),
+                conv_grade: parseGrade(row[idx[COL.conv]]),
               };
 
               // 필수값 체크
