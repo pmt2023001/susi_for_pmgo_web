@@ -307,7 +307,7 @@
         <button class="accent" id="print-overall-btn">현황 1부(PDF)</button>
         <button class="accent" id="print-capital-btn">서울+수도권+특목대(PDF)</button>
         <button id="print-full-btn">전체 인쇄(PDF)</button>
-        <button id="export-share-btn">📦 공유용 JSON 저장</button>
+        <button id="export-share-btn">📦 공유Page 저장</button>
 
       </div>
     </div>
@@ -402,7 +402,7 @@ exportBtn.addEventListener("click", exportShareJSON);
       window.print();
     }
 
-function exportShareJSON() {
+async exportShareJSON() {
   if (!lastRecords || !lastRecords.length) {
     alert("먼저 보고서를 생성해주세요!");
     return;
